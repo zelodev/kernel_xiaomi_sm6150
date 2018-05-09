@@ -1787,12 +1787,12 @@ int kblockd_mod_delayed_work_on(int cpu, struct delayed_work *dwork, unsigned lo
 #ifdef CONFIG_BLK_CGROUP
 static inline void set_start_time_ns(struct request *req)
 {
-	req->start_time_ns = ktime_get_ns();
+	req->cgroup_start_time_ns = ktime_get_ns();
 }
 
 static inline void set_io_start_time_ns(struct request *req)
 {
-	req->io_start_time_ns = ktime_get_ns();
+	req->cgroup_io_start_time_ns = ktime_get_ns();
 }
 
 static inline u64 rq_start_time_ns(struct request *req)
