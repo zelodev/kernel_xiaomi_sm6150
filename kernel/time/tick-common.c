@@ -500,6 +500,7 @@ void tick_freeze(void)
 				     smp_processor_id(), true);
 		system_state = SYSTEM_SUSPEND;
 		sched_clock_suspend();
+		system_state = SYSTEM_SUSPEND;
 		timekeeping_suspend();
 	} else {
 		tick_suspend_local();

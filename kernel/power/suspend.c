@@ -469,6 +469,8 @@ static int suspend_enter(suspend_state_t state, bool *wakeup)
 
 	system_state = SYSTEM_SUSPEND;
 
+	system_state = SYSTEM_SUSPEND;
+
 	error = syscore_suspend();
 	if (!error) {
 		*wakeup = pm_wakeup_pending();
@@ -484,6 +486,8 @@ static int suspend_enter(suspend_state_t state, bool *wakeup)
 		}
 		syscore_resume();
 	}
+
+	system_state = SYSTEM_RUNNING;
 
 	system_state = SYSTEM_RUNNING;
 
