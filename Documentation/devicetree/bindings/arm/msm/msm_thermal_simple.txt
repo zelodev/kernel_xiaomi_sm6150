@@ -4,7 +4,7 @@ MSM_THERMAL_SIMPLE is a standalone kernel driver which regulates thermal
 conditions on the device in the absence of an equivalent userspace daemon. The
 goal of MSM_THERMAL_SIMPLE is to prevent the temperature of the system from
 exceeding a thermal limit at which it cannot operate. The MSM_THERMAL_SIMPLE
-driver polls a list of CPU thermal sensors per core, and reduces the
+driver polls a given ADC channel for temperature readings, and reduces the
 maximum CPU frequency in steps, to limit power/thermal output when a threshold
 temperature is crossed. It restores the maximum CPU frequency in the same
 stepwise fashion when the threshold temperature is cleared.
@@ -13,6 +13,14 @@ The devicetree representation of the MSM_THERMAL_SIMPLE block should be:
 
 Required properties:
 - compatible: "qcom,msm-thermal-simple"
+
+- qcom,thermal-vadc:
+	The phandle to the VADC device to use.
+
+- qcom,adc-channel:
+	The ADC channel to poll from on the VADC device; a full
+	list of valid channels is available in include/linux/qpnp/qpnp-adc.h,
+	inside the qpnp_vadc_channels enumeration.
 
 - qcom,poll-ms:
 	The amount of time in milliseconds between each polling interval.
@@ -31,9 +39,6 @@ Required properties:
 	- qcom,gold-khz:
 		The frequency limit in kHz for the gold CPU cluster.
 
-	- qcom,prime-khz:
-		The frequency limit in kHz for the prime CPU cluster (if it exists).
-
 	- qcom,trip-deg:
 		The temperature corresponding to this zone. The units for this
 		are ambiguous; they correspond to whichever units the selected
@@ -49,6 +54,8 @@ Example:
 
 	qcom,msm-thermal-simple {
 		compatible = "qcom,msm-thermal-simple";
+		qcom,thermal-vadc = <&pm8998_vadc>;
+		qcom,adc-channel = <0x4c>;
 		qcom,poll-ms = <3000>;
 		qcom,start-delay = <60>;
 
