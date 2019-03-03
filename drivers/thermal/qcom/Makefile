@@ -17,3 +17,4 @@ obj-$(CONFIG_QTI_BCL_OFF_COOLING_DEVICE) += bcl_off_cdev.o
 obj-$(CONFIG_QTI_CPU_ISOLATE_COOLING_DEVICE) += cpu_isolate.o
 obj-$(CONFIG_QTI_CPU_VOLTAGE_COOLING_DEVICE) += cpu_voltage_cooling.o
 obj-$(CONFIG_QTI_DEVFREQ_VDD_COOLING_DEVICE) += devfreq_vdd_cdev.o
+obj-$(CONFIG_MSM_THERMAL_SIMPLE) += msm_thermal_simple.o

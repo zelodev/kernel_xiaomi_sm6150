@@ -180,3 +180,17 @@ config QTI_DEVFREQ_VDD_COOLING_DEVICE
 	  on a particular devfreq device. This mitigation device will be used by
 	  low temperature reliability rules to mitigate a devfreq device at
 	  minimum operating level.
+
+config MSM_THERMAL_SIMPLE
+	bool "Simple solution to monitor temperature and limit CPU frequency"
+	default n
+	help
+	  When properly configured, this driver monitors temperatures from a
+	  specified sensor and reduces the CPU's max frequency in response to
+	  the temperature crossing specified thermal zones. The temperature sensor
+	  use must be a specified ADC channel on a given VADC device, hence this
+	  driver's dependency on the chipset being an MSM product.
+
+	  This driver can only be configured via the device tree; it cannot be
+	  configured at runtime. Configuration instructions can be found in the
+	  accompanying documentation.
