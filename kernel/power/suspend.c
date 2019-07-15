@@ -437,11 +437,6 @@ static int suspend_enter(suspend_state_t state, bool *wakeup)
 	if (error)
 		goto Devices_early_resume;
 
-	if (state == PM_SUSPEND_TO_IDLE && pm_test_level != TEST_PLATFORM) {
-		s2idle_loop();
-		goto Platform_early_resume;
-	}
-
 	error = dpm_suspend_noirq(PMSG_SUSPEND);
 	if (error) {
 		last_dev = suspend_stats.last_failed_dev + REC_FAILED_NUM - 1;
@@ -457,6 +452,11 @@ static int suspend_enter(suspend_state_t state, bool *wakeup)
 
 	if (suspend_test(TEST_PLATFORM))
 		goto Platform_wake;
+
+	if (state == PM_SUSPEND_TO_IDLE) {
+		s2idle_loop();
+		goto Platform_wake;
+	}
 
 	error = disable_nonboot_cpus();
 	if (error || suspend_test(TEST_CPUS)) {
