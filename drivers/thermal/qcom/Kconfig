@@ -161,3 +161,13 @@ config QTI_BCL_OFF_COOLING_DEVICE
 	   This enables the bcl off cooling devices.
 	   These cooling devices will be used to disable bcl
 	   whenever RF calibration is performed.
+
+config QTI_CPU_ISOLATE_COOLING_DEVICE
+	tristate "QTI CPU Isolate cooling devices"
+	depends on THERMAL_OF && QTI_THERMAL
+	help
+	   This enables the QTI CPU Isolation cooling devices. These cooling
+	   devices will be used by QTI chipset to isolate a CPU from being
+	   scheduled and hence will let the CPU to power collapse. Isolating
+	   a CPU will be used when the CPU frequency mitigation
+	   is not good enough to achieve the necessary cooling.
