@@ -102,8 +102,7 @@ nf_socket_get_sock_v6(struct net *net, struct sk_buff *skb, int doff,
 struct sock *nf_sk_lookup_slow_v6(struct net *net, const struct sk_buff *skb,
 				  const struct net_device *indev)
 {
-	struct sock *sk = skb->sk;
-	__be16 uninitialized_var(dport), uninitialized_var(sport);
+	__be16 dport, sport;
 	const struct in6_addr *daddr = NULL, *saddr = NULL;
 	struct ipv6hdr *iph = ipv6_hdr(skb), ipv6_var;
 	struct sk_buff *data_skb = NULL;
@@ -142,14 +141,8 @@ struct sock *nf_sk_lookup_slow_v6(struct net *net, const struct sk_buff *skb,
 		return NULL;
 	}
 
-	if (sk)
-		refcount_inc(&sk->sk_refcnt);
-	else
-		sk = nf_socket_get_sock_v6(dev_net(skb->dev), data_skb, doff,
-					   tproto, saddr, daddr, sport, dport,
-					   indev);
-
-	return sk;
+	return nf_socket_get_sock_v6(net, data_skb, doff, tproto, saddr, daddr,
+				     sport, dport, indev);
 }
 EXPORT_SYMBOL_GPL(nf_sk_lookup_slow_v6);
 
