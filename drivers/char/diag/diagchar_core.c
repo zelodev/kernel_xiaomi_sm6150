@@ -34,7 +34,9 @@
 #include "diagfwd.h"
 #include "diagfwd_cntl.h"
 #include "diag_dci.h"
+#ifdef CONFIG_DEBUG_FS
 #include "diag_debugfs.h"
+#endif
 #include "diag_masks.h"
 #include "diagfwd_bridge.h"
 #include "diag_usb.h"
@@ -4524,9 +4526,11 @@ static int __init diagchar_init(void)
 	ret = diag_real_time_info_init();
 	if (ret)
 		goto fail;
+#ifdef CONFIG_DEBUG_FS
 	ret = diag_debugfs_init();
 	if (ret)
 		goto fail;
+#endif
 	ret = diag_masks_init();
 	if (ret)
 		goto fail;
@@ -4574,7 +4578,9 @@ static int __init diagchar_init(void)
 
 fail:
 	pr_err("diagchar is not initialized, ret: %d\n", ret);
+#ifdef CONFIG_DEBUG_FS
 	diag_debugfs_cleanup();
+#endif
 	diagchar_cleanup();
 	diag_mux_exit();
 	diagfwd_peripheral_exit();
@@ -4599,7 +4605,9 @@ static void diagchar_exit(void)
 	diag_md_session_exit();
 	if (IS_ENABLED(CONFIG_DIAGFWD_BRIDGE_CODE))
 		diag_unregister_bridge();
+#ifdef CONFIG_DEBUG_FS
 	diag_debugfs_cleanup();
+#endif
 	diagchar_cleanup();
 	pr_info("done diagchar exit\n");
 }
