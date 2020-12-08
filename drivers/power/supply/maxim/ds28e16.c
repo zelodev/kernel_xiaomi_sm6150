@@ -32,10 +32,10 @@
 #include <linux/regmap.h>
 #include <linux/random.h>
 
-#define ds_info	pr_err
-#define ds_dbg	pr_err
+#define ds_info	pr_debug
+#define ds_dbg	pr_debug
 #define ds_err	pr_err
-#define ds_log	pr_err
+#define ds_log	pr_debug
 
 struct ds28e16_data {
 	struct platform_device *pdev;
@@ -1311,7 +1311,7 @@ static int verify_get_property(struct power_supply *psy, enum power_supply_prope
 #endif
 		break;
 	default:
-		ds_err("unsupported property %d\n", psp);
+		ds_dbg("unsupported property %d\n", psp);
 		return -ENODATA;
 	}
 
@@ -1371,7 +1371,7 @@ static int verify_set_property(struct power_supply *psy,
 		break;
 #endif
 	default:
-		ds_err("unsupported property %d\n", prop);
+		ds_dbg("unsupported property %d\n", prop);
 		return -ENODATA;
 	}
 
