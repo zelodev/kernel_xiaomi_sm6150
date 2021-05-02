@@ -60,7 +60,7 @@
 			compatible = "arm,armv8";
 			reg = <0x0 0x0>;
 			enable-method = "psci";
-			capacity-dmips-mhz = <488>;
+			capacity-dmips-mhz = <487>;
 			sched-energy-costs = <&CPU_COST_0 &CLUSTER_COST_0>;
 			next-level-cache = <&L2_0>;
                         freq-energy-model;
@@ -97,7 +97,7 @@
 			compatible = "arm,armv8";
 			reg = <0x0 0x100>;
 			enable-method = "psci";
-			capacity-dmips-mhz = <488>;
+			capacity-dmips-mhz = <487>;
 			sched-energy-costs = <&CPU_COST_0 &CLUSTER_COST_0>;
 			next-level-cache = <&L2_100>;
                         freq-energy-model;
@@ -130,7 +130,7 @@
 			compatible = "arm,armv8";
 			reg = <0x0 0x200>;
 			enable-method = "psci";
-			capacity-dmips-mhz = <488>;
+			capacity-dmips-mhz = <487>;
 			sched-energy-costs = <&CPU_COST_0 &CLUSTER_COST_0>;
 			next-level-cache = <&L2_200>;
                         freq-energy-model;
@@ -162,7 +162,7 @@
 			compatible = "arm,armv8";
 			reg = <0x0 0x300>;
 			enable-method = "psci";
-			capacity-dmips-mhz = <488>;
+			capacity-dmips-mhz = <487>;
 			sched-energy-costs = <&CPU_COST_0 &CLUSTER_COST_0>;
 			next-level-cache = <&L2_300>;
                         freq-energy-model;
@@ -194,7 +194,7 @@
 			compatible = "arm,armv8";
 			reg = <0x0 0x400>;
 			enable-method = "psci";
-			capacity-dmips-mhz = <488>;
+			capacity-dmips-mhz = <487>;
 			sched-energy-costs = <&CPU_COST_0 &CLUSTER_COST_0>;
 			next-level-cache = <&L2_400>;
                         freq-energy-model;
@@ -226,7 +226,7 @@
 			compatible = "arm,armv8";
 			reg = <0x0 0x500>;
 			enable-method = "psci";
-			capacity-dmips-mhz = <488>;
+			capacity-dmips-mhz = <487>;
 			sched-energy-costs = <&CPU_COST_0 &CLUSTER_COST_0>;
 			next-level-cache = <&L2_500>;
                         freq-energy-model;
@@ -380,16 +380,16 @@
 
 		CPU_COST_0: core-cost0 {
 			busy-cost-data = <
-				300000  66
-				576000  82
-				768000  91
-				1017600 106
-				1248000 120
-				1324800 125
-				1497600 136
-				1612800 143
-				1708800 152
-				1804800 168
+				   63  146
+				  122  164
+				  162  176
+				  215  191
+				  264  209
+				  280  213
+				  317  224
+				  341  230
+				  362  235
+				  381  251
 			>;
 			idle-cost-data = <
 				16 12 8 6
@@ -398,19 +398,19 @@
 
 		CPU_COST_1: core-cost1 {
 			busy-cost-data = <
-				300000  112
-				652800  168
-				806400  191
-				979200  231
-				1094400 263
-				1209600 291
-				1324800 328
-				1555200 425
-				1708800 489
-				1843200 560
-				1939200 622
-				2169600 819
-				2208000 828
+				  133  208
+				  290  266
+				  358  291
+				  435  334
+				  486  370
+				  537  395
+				  588  432
+				  691  542
+				  759  622
+				  819  701
+				  862  775
+				  964  998
+				  981 1016
 			>;
 			idle-cost-data = <
 				100 80 60 40
@@ -419,16 +419,16 @@
 
 		CLUSTER_COST_0: cluster-cost0 {
 			busy-cost-data = <
-				300000	5
-				576000	5
-				768000	5
-				1017600	7
-				1248000	8
-				1324800	10
-				1497600	10
-				1612800	12
-				1708800	14
-				1804800	14
+				   63    5
+				  122    5
+				  162    5
+				  215    7
+				  264    8
+				  280   10
+				  317   10
+				  341   12
+				  362   14
+				  381   14
 			>;
 			idle-cost-data = <
 				5 4 3 2 1
@@ -437,19 +437,19 @@
 
 		CLUSTER_COST_1: cluster-cost1 {
 			busy-cost-data = <
-				300000	19
-				652800	21
-				806400	21
-				979200	25
-				1094400	26
-				1209600	32
-				1324800	33
-				1555200	41
-				1708800	43
-				1843200	49
-				1939200	50
-				2169600	60
-				2208000	61
+				  133   19
+				  290   21
+				  358   21
+				  435   25
+				  486   26
+				  537   32
+				  588   33
+				  691   41
+				  759   43
+				  819   49
+				  862   50
+				  964   60
+				  981   61
 			>;
 			idle-cost-data = <
 				5 4 3 2 1
