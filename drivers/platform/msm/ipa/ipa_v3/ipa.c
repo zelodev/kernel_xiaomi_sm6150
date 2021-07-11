@@ -7391,8 +7391,10 @@ static int ipa3_pre_init(const struct ipa3_plat_drv_res *resource_p,
 		result = -ENODEV;
 		goto fail_device_create;
 	}
-
+	
+#ifdef CONFIG_DEBUGFS
 	ipa3_debugfs_pre_init();
+
 #ifdef IPA_WAKELOCKS
 	/* Create a wakeup source. */
 	wakeup_source_init(&ipa3_ctx->w_lock, "IPA_WS");
