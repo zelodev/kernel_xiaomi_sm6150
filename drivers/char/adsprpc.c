@@ -3520,6 +3520,7 @@ static const struct file_operations debugfs_fops = {
 	.open = fastrpc_debugfs_open,
 	.read = fastrpc_debugfs_read,
 };
+
 static int fastrpc_channel_open(struct fastrpc_file *fl)
 {
 	struct fastrpc_apps *me = &gfa;
