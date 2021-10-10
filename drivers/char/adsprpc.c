@@ -46,6 +46,7 @@
 #include "adsprpc_shared.h"
 #include <soc/qcom/ramdump.h>
 #include <linux/debugfs.h>
+#include <linux/cpumask.h>
 #include <linux/stat.h>
 
 #define TZ_PIL_PROTECT_MEM_SUBSYS_ID 0x0C
@@ -3717,6 +3718,7 @@ static int fastrpc_internal_control(struct fastrpc_file *fl,
 		goto bail;
 
 	switch (cp->req) {
+
 	case FASTRPC_CONTROL_KALLOC:
 		cp->kalloc.kalloc_support = 1;
 		break;
