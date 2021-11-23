@@ -1,4 +1,3 @@
-#include <linux/binfmts.h>
 #include <linux/cgroup.h>
 #include <linux/err.h>
 #include <linux/kernel.h>
@@ -57,6 +56,10 @@ struct schedtune {
 	/* Hint to bias scheduling of tasks on that SchedTune CGroup
 	 * towards idle CPUs */
 	int prefer_idle;
+
+	/* Hint to bias scheduling of tasks on that SchedTune CGroup
+	 * towards higher capacity CPUs */
+	bool prefer_high_cap;
 };
 
 static inline struct schedtune *css_st(struct cgroup_subsys_state *css)
@@ -83,9 +86,8 @@ static inline struct schedtune *parent_st(struct schedtune *st)
  * By default, system-wide boosting is disabled, i.e. no boosting is applied
  * to tasks which are not into a child control group.
  */
-static struct schedtune
-root_schedtune = {
-	.boost	= 0,
+static struct schedtune root_schedtune = {
+	.boost = 0,
 #ifdef CONFIG_SCHED_WALT
 	.sched_boost_no_override = false,
 	.sched_boost_enabled = true,
@@ -93,6 +95,7 @@ root_schedtune = {
 	.colocate_update_disabled = false,
 #endif
 	.prefer_idle = 0,
+	.prefer_high_cap = false,
 };
 
 /*
@@ -106,7 +109,7 @@ root_schedtune = {
  *    implementation especially for the computation of the per-CPU boost
  *    value
  */
-#define BOOSTGROUPS_COUNT 6
+#define BOOSTGROUPS_COUNT 8
 
 /* Array of configured boostgroups */
 static struct schedtune *allocated_group[BOOSTGROUPS_COUNT] = {
@@ -180,18 +183,9 @@ void restore_cgroup_boost_settings(void)
 
 bool task_sched_boost(struct task_struct *p)
 {
-	struct schedtune *st;
-	bool enabled;
+	struct schedtune *st = task_schedtune(p);
 
-	if (unlikely(!schedtune_initialized))
-		return false;
-
-	rcu_read_lock();
-	st = task_schedtune(p);
-	enabled = st->sched_boost_enabled;
-	rcu_read_unlock();
-
-	return enabled;
+	return st->sched_boost_enabled;
 }
 
 static u64
@@ -654,25 +648,39 @@ boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
 	return 0;
 }
 
-#ifdef CONFIG_STUNE_ASSIST
-static int boost_write_wrapper(struct cgroup_subsys_state *css,
-			       struct cftype *cft, s64 boost)
+int schedtune_prefer_high_cap(struct task_struct *p)
 {
-	if (task_is_booster(current))
+	struct schedtune *st;
+	int prefer_high_cap;
+
+	if (unlikely(!schedtune_initialized))
 		return 0;
 
-	return boost_write(css, cft, boost);
+	/* Get prefer_high_cap value */
+	rcu_read_lock();
+	st = task_schedtune(p);
+	prefer_high_cap = st->prefer_high_cap;
+	rcu_read_unlock();
+
+	return prefer_high_cap;
 }
 
-static int prefer_idle_write_wrapper(struct cgroup_subsys_state *css,
-				     struct cftype *cft, u64 prefer_idle)
+static u64 prefer_high_cap_read(struct cgroup_subsys_state *css,
+				struct cftype *cft)
 {
-	if (task_is_booster(current))
-		return 0;
+	struct schedtune *st = css_st(css);
 
-	return prefer_idle_write(css, cft, prefer_idle);
+	return st->prefer_high_cap;
 }
-#endif
+
+static int prefer_high_cap_write(struct cgroup_subsys_state *css,
+				 struct cftype *cft, u64 prefer_high_cap)
+{
+	struct schedtune *st = css_st(css);
+	st->prefer_high_cap = !!prefer_high_cap;
+
+	return 0;
+}
 
 static struct cftype files[] = {
 #ifdef CONFIG_SCHED_WALT
@@ -690,22 +698,19 @@ static struct cftype files[] = {
 	{
 		.name = "boost",
 		.read_s64 = boost_read,
-#ifdef CONFIG_STUNE_ASSIST
-		.write_s64 = boost_write_wrapper,
-#else
-		.write_u64 = boost_write,
-#endif
+		.write_s64 = boost_write,
 	},
 	{
 		.name = "prefer_idle",
 		.read_u64 = prefer_idle_read,
-#ifdef CONFIG_STUNE_ASSIST
-		.write_u64 = prefer_idle_write_wrapper,
-#else
-		.write_u64 = prefer_idle,
-#endif
+		.write_u64 = prefer_idle_write,
 	},
-	{ }	/* terminate */
+	{
+		.name = "prefer_high_cap",
+		.read_u64 = prefer_high_cap_read,
+		.write_u64 = prefer_high_cap_write,
+	},
+	{} /* terminate */
 };
 
 static int
@@ -728,37 +733,30 @@ schedtune_boostgroup_init(struct schedtune *st)
 	return 0;
 }
 
-#ifdef CONFIG_STUNE_ASSIST
 struct st_data {
 	char *name;
-	int boost;
-	bool prefer_idle;
+	bool prefer_high_cap;
 };
 
-static void write_default_values(struct cgroup_subsys_state *css)
-{
+static void write_default_prefer_high_cap_values(struct cgroup_subsys_state *css) {
 	static struct st_data st_targets[] = {
-		{ "audio-app",	0, 0 },
-		{ "background",	0, 0 },
-		{ "foreground",	0, 1 },
-		{ "rt",		0, 0 },
-		{ "camera-daemon",	1, 1 },
-		{ "top-app",	1, 1 },
+		{ "audio-app",		0 },
+		{ "background",		0 },
+		{ "foreground",		0 },
+		{ "rt",			0 },
+		{ "camera-daemon",	1 },
+		{ "top-app",		1 }
 	};
+
 	int i;
 
 	for (i = 0; i < ARRAY_SIZE(st_targets); i++) {
 		struct st_data tgt = st_targets[i];
 
-		if (!strcmp(css->cgroup->kn->name, tgt.name)) {
-			boost_write(css, NULL, tgt.boost);
-			prefer_idle_write(css, NULL, tgt.prefer_idle);
-			pr_info("stune_assist: setting values for %s: boost=%d prefer_idle=%d\n",
-				tgt.name, tgt.boost, tgt.prefer_idle);
-		}
+		if (!strcmp(css->cgroup->kn->name, tgt.name))
+			prefer_high_cap_write(css, NULL, tgt.prefer_high_cap);
 	}
 }
-#endif
 
 static struct cgroup_subsys_state *
 schedtune_css_alloc(struct cgroup_subsys_state *parent_css)
@@ -775,12 +773,11 @@ schedtune_css_alloc(struct cgroup_subsys_state *parent_css)
 		return ERR_PTR(-ENOMEM);
 	}
 
+	/* Allow only a limited number of boosting groups */
 	for (idx = 1; idx < BOOSTGROUPS_COUNT; ++idx) {
 		if (!allocated_group[idx])
 			break;
-#ifdef CONFIG_STUNE_ASSIST
-		write_default_values(&allocated_group[idx]->css);
-#endif
+	write_default_prefer_high_cap_values(&allocated_group[idx]->css);
 	}
 	if (idx == BOOSTGROUPS_COUNT) {
 		pr_err("Trying to create more than %d SchedTune boosting groups\n",
