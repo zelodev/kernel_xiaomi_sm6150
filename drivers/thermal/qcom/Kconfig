@@ -154,6 +154,10 @@ config MSM_THERMAL_SIMPLE
 	  use must be a specified ADC channel on a given VADC device, hence this
 	  driver's dependency on the chipset being an MSM product.
 
-	  This driver can only be configured via the device tree; it cannot be
-	  configured at runtime. Configuration instructions can be found in the
-	  accompanying documentation.
+config QTI_BCL_OFF_COOLING_DEVICE
+	tristate "QTI Ibat threshold update cooling devices"
+	depends on THERMAL_OF && QTI_THERMAL
+	help
+	   This enables the bcl off cooling devices.
+	   These cooling devices will be used to disable bcl
+	   whenever RF calibration is performed.
