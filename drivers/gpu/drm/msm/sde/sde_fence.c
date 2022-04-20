@@ -91,9 +91,6 @@ uint32_t sde_sync_get_name_prefix(void *fence)
 struct sde_fence {
 	struct dma_fence base;
 	struct sde_fence_context *ctx;
-#ifdef CONFIG_FENCE_DEBUG
-	char name[SDE_FENCE_NAME_SIZE];
-#endif
 	struct list_head	fence_list;
 	int fd;
 };
@@ -219,10 +216,6 @@ static int _sde_fence_create_fd(void *fence_ctx, uint32_t val)
 		return -ENOMEM;
 
 	sde_fence->ctx = fence_ctx;
-#ifdef CONFIG_FENCE_DEBUG
-	snprintf(sde_fence->name, SDE_FENCE_NAME_SIZE, "sde_fence:%s:%u",
-						sde_fence->ctx->name, val);
-#endif
 	dma_fence_init(&sde_fence->base, &sde_fence_ops, &ctx->lock,
 		ctx->context, val);
 	kref_get(&ctx->kref);
