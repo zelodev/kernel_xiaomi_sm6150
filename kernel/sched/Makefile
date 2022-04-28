@@ -24,6 +24,9 @@ KBUILD_CFLAGS	+= -mcpu=cortex-a55 -mtune=cortex-a55
 KBUILD_CFLAGS	+= -mcpu=cortex-a55+crypto -mtune=cortex-a55
 endif
 
+ccflags-y += -mllvm -inline-threshold=15000
+ccflags-y += -mllvm -inlinehint-threshold=10000
+
 obj-y += core.o loadavg.o clock.o cputime.o
 obj-y += idle_task.o fair.o rt.o deadline.o
 obj-y += wait.o wait_bit.o swait.o completion.o idle.o
