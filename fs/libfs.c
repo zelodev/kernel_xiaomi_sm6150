@@ -1250,10 +1250,8 @@ bool is_empty_dir_inode(struct inode *inode)
  */
 bool needs_casefold(const struct inode *dir)
 {
-	return IS_CASEFOLDED(dir) && dir->i_sb->s_encoding &&
-			(!IS_ENCRYPTED(dir) || fscrypt_has_encryption_key(dir));
+	return IS_CASEFOLDED(dir) && dir->i_sb->s_encoding;
 }
-EXPORT_SYMBOL(needs_casefold);
 
 /**
  * generic_ci_d_compare - generic d_compare implementation for casefolding filesystems
