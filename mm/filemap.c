@@ -2511,11 +2511,14 @@ int filemap_fault(struct vm_fault *vmf)
 
 	if (vmf->flags & FAULT_FLAG_SPECULATIVE) {
 		page = find_get_page(mapping, offset);
-		if (unlikely(!page) || unlikely(PageReadahead(page)))
+		if (unlikely(!page))
 			return VM_FAULT_RETRY;
 
+		if (unlikely(PageReadahead(page)))
+			goto page_put;
+
 		if (!trylock_page(page))
-			return VM_FAULT_RETRY;
+			goto page_put;
 
 		if (unlikely(compound_head(page)->mapping != mapping))
 			goto page_unlock;
@@ -2547,6 +2550,8 @@ int filemap_fault(struct vm_fault *vmf)
 		return VM_FAULT_LOCKED;
 page_unlock:
 		unlock_page(page);
+page_put:
+		put_page(page);
 		return VM_FAULT_RETRY;
 	}
 
