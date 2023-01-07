@@ -110,7 +110,7 @@ int wl2866d_camera_power_up(int out_iotype)
 	switch (out_iotype) {
 	case OUT_DVDD1:
 		//macro ov5675
-		pr_err("wl2866d ultra & macro: wl2866 out put type is [%d]", out_iotype);
+		pr_debug("wl2866d ultra & macro: wl2866 out put type is [%d]", out_iotype);
 		mutex_lock(&wl2866d_mutex);
 		ret = wl2866d_i2c_write(camera_chip, wl2866d_on_config[OUT_DVDD1].reg, 0x64);//bit0
 		if (ret < 0) {
@@ -126,9 +126,9 @@ int wl2866d_camera_power_up(int out_iotype)
 			break;
 		}
 
-		pr_err("wl2866d before set enable value = 0x%x\n", reg_val);
+		pr_debug("wl2866d before set enable value = 0x%x\n", reg_val);
 		reg_val |= 0b0001;//bit 0
-		pr_err("wl2866d after  set enable value = 0x%x\n", reg_val);
+		pr_debug("wl2866d after  set enable value = 0x%x\n", reg_val);
 
 		ret = wl2866d_i2c_write(camera_chip, wl2866d_on_config[VOL_ENABLE].reg, reg_val);//bit0
 		if (ret < 0) {
@@ -137,12 +137,12 @@ int wl2866d_camera_power_up(int out_iotype)
 			break;
 		}
 		mutex_unlock(&wl2866d_mutex);
-		pr_err("wl2866d set OUT_DVDD1 success!");
+		pr_debug("wl2866d set OUT_DVDD1 success!");
 		break;
 
 	case OUT_DVDD2:
  		//front imx471
-		pr_err("wl2866d imx471: wl2866 out put type is [%d]", out_iotype);
+		pr_debug("wl2866d imx471: wl2866 out put type is [%d]", out_iotype);
 		mutex_lock(&wl2866d_mutex);
 		ret = wl2866d_i2c_write(camera_chip, wl2866d_on_config[OUT_DVDD2].reg, 0x4B);//bit1
 		if (ret < 0) {
@@ -157,9 +157,9 @@ int wl2866d_camera_power_up(int out_iotype)
 			pr_err("xyz wl2866d read enable failed\n");
 			break;
 		}
-		pr_err("wl2866d before set enable value = 0x%x\n", reg_val);
+		pr_debug("wl2866d before set enable value = 0x%x\n", reg_val);
 		reg_val |= 0b0010;//bit1
-		pr_err("wl2866d after  set enable value = 0x%x\n", reg_val);
+		pr_debug("wl2866d after  set enable value = 0x%x\n", reg_val);
 
 		ret = wl2866d_i2c_write(camera_chip, wl2866d_on_config[VOL_ENABLE].reg, reg_val);//bit1
 		if (ret < 0) {
@@ -168,12 +168,12 @@ int wl2866d_camera_power_up(int out_iotype)
 			break;
 		}
 		mutex_unlock(&wl2866d_mutex);
-		pr_err("wl2866d set OUT_DVDD2 success!");
+		pr_debug("wl2866d set OUT_DVDD2 success!");
 		break;
 
 	case OUT_AVDD1:
 		//wide s5kgw3/s5khm2
-		pr_err("wl2866d wide: wl2866 out put type is [%d]", out_iotype);
+		pr_debug("wl2866d wide: wl2866 out put type is [%d]", out_iotype);
 		mutex_lock(&wl2866d_mutex);
 		ret = wl2866d_i2c_write(camera_chip, wl2866d_on_config[OUT_AVDD1].reg, 0x80);//bit2
 		if (ret < 0) {
@@ -189,9 +189,9 @@ int wl2866d_camera_power_up(int out_iotype)
 			break;
 		}
 
-		pr_err("wl2866d before set enable value = 0x%x\n", reg_val);
+		pr_debug("wl2866d before set enable value = 0x%x\n", reg_val);
 		reg_val |= 0b0100;//bit2
-		pr_err("wl2866d after  set enable value = 0x%x\n", reg_val);
+		pr_debug("wl2866d after  set enable value = 0x%x\n", reg_val);
 
 		ret = wl2866d_i2c_write(camera_chip, wl2866d_on_config[VOL_ENABLE].reg, reg_val);//bit2
 		if (ret < 0) {
@@ -200,12 +200,12 @@ int wl2866d_camera_power_up(int out_iotype)
 			break;
 		}
 		mutex_unlock(&wl2866d_mutex);
-		pr_err("wl2866d set OUT_AVDD1 success!");
+		pr_debug("wl2866d set OUT_AVDD1 success!");
 		break;
 
 	case OUT_AVDD2:
 		//ultra imx355
-		pr_err("wl2866d ultra: wl2866 out put type is [%d]", out_iotype);
+		pr_debug("wl2866d ultra: wl2866 out put type is [%d]", out_iotype);
 		mutex_lock(&wl2866d_mutex);
 		ret = wl2866d_i2c_write(camera_chip, wl2866d_on_config[OUT_AVDD2].reg, 0x78);//bit3
 		if (ret < 0) {
@@ -221,9 +221,9 @@ int wl2866d_camera_power_up(int out_iotype)
 			break;
 		}
 
-		pr_err("wl2866d before set enable value = 0x%x\n", reg_val);
+		pr_debug("wl2866d before set enable value = 0x%x\n", reg_val);
 		reg_val |= 0b1000;//bit3
-		pr_err("wl2866d after  set enable value = 0x%x\n", reg_val);
+		pr_debug("wl2866d after  set enable value = 0x%x\n", reg_val);
 
 		ret = wl2866d_i2c_write(camera_chip, wl2866d_on_config[VOL_ENABLE].reg, reg_val);//bit3
 		if (ret < 0) {
@@ -232,13 +232,13 @@ int wl2866d_camera_power_up(int out_iotype)
 			break;
 		}
 		mutex_unlock(&wl2866d_mutex);
-		pr_err("wl2866d set OUT_AVDD2 success!");
+		pr_debug("wl2866d set OUT_AVDD2 success!");
 		break;
 	default:
 		pr_err("wl2866d unknown port!!!\n");
 		break;
 	}
-	pr_err("wl2866d result = %d\n", ret);
+	pr_debug("wl2866d result = %d\n", ret);
 	return ret;
 }
 EXPORT_SYMBOL(wl2866d_camera_power_up);
@@ -252,7 +252,7 @@ int wl2866d_camera_power_down(int out_iotype)
 	switch (out_iotype) {
 	case OUT_DVDD1:
 		//macro ov5675
-		pr_err("wl2866d ultra & macro: wl2866 out put type is [%d]", out_iotype);
+		pr_debug("wl2866d ultra & macro: wl2866 out put type is [%d]", out_iotype);
 		mutex_lock(&wl2866d_mutex);
 		ret = wl2866d_i2c_read(camera_chip, wl2866d_on_config[VOL_ENABLE].reg, &reg_val);
 		if (ret < 0) {
@@ -260,9 +260,9 @@ int wl2866d_camera_power_down(int out_iotype)
 			pr_err("wl2866d read enable failed\n");
 			break;
 		}
-		pr_err("wl2866d before set enable value = 0x%x\n", reg_val);
+		pr_debug("wl2866d before set enable value = 0x%x\n", reg_val);
 		reg_val &= 0b1110;//bit0
-		pr_err("wl2866d after  set enable value = 0x%x\n", reg_val);
+		pr_debug("wl2866d after  set enable value = 0x%x\n", reg_val);
 
 		ret = wl2866d_i2c_write(camera_chip, wl2866d_on_config[VOL_ENABLE].reg, reg_val);//bit1
 		if (ret < 0) {
@@ -275,7 +275,7 @@ int wl2866d_camera_power_down(int out_iotype)
 
 	case OUT_DVDD2:
 		//front imx471
-		pr_err("wl2866d imx471: wl2866 out put type is [%d]", out_iotype);
+		pr_debug("wl2866d imx471: wl2866 out put type is [%d]", out_iotype);
 		mutex_lock(&wl2866d_mutex);
 		ret = wl2866d_i2c_read(camera_chip, wl2866d_on_config[VOL_ENABLE].reg, &reg_val);
 		if (ret < 0) {
@@ -284,9 +284,9 @@ int wl2866d_camera_power_down(int out_iotype)
 			break;
 		}
 
-		pr_err("wl2866d before set enable value = 0x%x\n", reg_val);
+		pr_debug("wl2866d before set enable value = 0x%x\n", reg_val);
 		reg_val &= 0b1101;//bit1
-		pr_err("wl2866d after  set enable value = 0x%x\n", reg_val);
+		pr_debug("wl2866d after  set enable value = 0x%x\n", reg_val);
 
 		ret = wl2866d_i2c_write(camera_chip, wl2866d_on_config[VOL_ENABLE].reg, reg_val);//bit1
 		if (ret < 0) {
@@ -299,7 +299,7 @@ int wl2866d_camera_power_down(int out_iotype)
 
 	case OUT_AVDD1:
 		//wide s5kgw3/s5khm2
-		pr_err("wl2866d wide: wl2866 out put type is [%d]", out_iotype);
+		pr_debug("wl2866d wide: wl2866 out put type is [%d]", out_iotype);
 		mutex_lock(&wl2866d_mutex);
 		ret = wl2866d_i2c_read(camera_chip, wl2866d_on_config[VOL_ENABLE].reg, &reg_val);
 		if (ret < 0) {
@@ -308,9 +308,9 @@ int wl2866d_camera_power_down(int out_iotype)
 			break;
 		}
 
-		pr_err("wl2866d before set enable value = 0x%x\n", reg_val);
+		pr_debug("wl2866d before set enable value = 0x%x\n", reg_val);
 		reg_val &= 0b1011;//bit2
-		pr_err("wl2866d after  set enable value = 0x%x\n", reg_val);
+		pr_debug("wl2866d after  set enable value = 0x%x\n", reg_val);
 
 		ret = wl2866d_i2c_write(camera_chip, wl2866d_on_config[VOL_ENABLE].reg, reg_val);//bit2
 		if (ret < 0) {
@@ -323,7 +323,7 @@ int wl2866d_camera_power_down(int out_iotype)
 
 	case OUT_AVDD2:
 		//ultra imx355
-		pr_err("wl2866d ultra: wl2866 output iotype is [%d]", out_iotype);
+		pr_debug("wl2866d ultra: wl2866 output iotype is [%d]", out_iotype);
 		mutex_lock(&wl2866d_mutex);
 		ret = wl2866d_i2c_read(camera_chip, wl2866d_on_config[VOL_ENABLE].reg, &reg_val);
 		if (ret < 0) {
@@ -332,9 +332,9 @@ int wl2866d_camera_power_down(int out_iotype)
 			break;
 		}
 
-		pr_err("wl2866d before set enable value = 0x%x\n", reg_val);
+		pr_debug("wl2866d before set enable value = 0x%x\n", reg_val);
 		reg_val &= 0b0111;//bit3
-		pr_err("wl2866d after  set enable value = 0x%x\n", reg_val);
+		pr_debug("wl2866d after  set enable value = 0x%x\n", reg_val);
 
 		ret = wl2866d_i2c_write(camera_chip, wl2866d_on_config[VOL_ENABLE].reg, reg_val);//bit1
 		if (ret < 0) {
@@ -348,7 +348,7 @@ int wl2866d_camera_power_down(int out_iotype)
 		pr_err("wl2866d unknown camera!!!\n");
 		break;
 	}
-	pr_err("wl2866d result = %d\n", ret);
+	pr_debug("wl2866d result = %d\n", ret);
 	return ret;
 }
 EXPORT_SYMBOL(wl2866d_camera_power_down);
