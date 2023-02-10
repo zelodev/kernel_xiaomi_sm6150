@@ -279,12 +279,6 @@ static void sdio_release_func(struct device *dev)
 #endif
 		sdio_free_func_cis(func);
 
-	/*
-	 * We have now removed the link to the tuples in the
-	 * card structure, so remove the reference.
-	 */
-	put_device(&func->card->dev);
-
 	kfree(func->info);
 	kfree(func->tmpbuf);
 	kfree(func);
