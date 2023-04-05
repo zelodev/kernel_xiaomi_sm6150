@@ -1,6 +1,7 @@
+// SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2012-2020, The Linux Foundation. All rights reserved.
- * Copyright (C) 2021 XiaoMi, Inc.
+ * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
  * Author: Brian Swetland <swetland@google.com>
  *
  * This software is licensed under the terms of the GNU General Public
@@ -2256,6 +2257,15 @@ static int32_t q6asm_callback(struct apr_client_data *data, void *priv)
 
 		config_debug_fs_read_cb();
 
+		if (data->payload_size != (READDONE_IDX_SEQ_ID + 1) * sizeof(uint32_t)) {
+			pr_err("%s:  payload size of %d is less than expected %d.\n",
+					__func__, data->payload_size,
+					((READDONE_IDX_SEQ_ID + 1) * sizeof(uint32_t)));
+			spin_unlock_irqrestore(
+				&(session[session_id].session_lock),
+				flags);
+			return -EINVAL;
+		}
 		dev_vdbg(ac->dev, "%s: ReadDone: status=%d buff_add=0x%x act_size=%d offset=%d\n",
 				__func__, payload[READDONE_IDX_STATUS],
 				payload[READDONE_IDX_BUFADD_LSW],
@@ -10819,12 +10829,6 @@ static int q6asm_get_asm_topology_apptype(struct q6asm_cal_info *cal_info)
 		cal_block->cal_info)->topology;
 	cal_info->app_type = ((struct audio_cal_info_asm_top *)
 		cal_block->cal_info)->app_type;
-
-	if (0 == cal_info->topology_id) {
-		cal_info->topology_id = 0x10c68;;
-		pr_err("%s: Correct using topology %d app_type %d\n", __func__,
-			cal_info->topology_id, cal_info->app_type);
-	}
 
 	cal_utils_mark_cal_used(cal_block);
 
