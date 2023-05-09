@@ -600,7 +600,9 @@ static void complete_commit(struct msm_commit *c)
 
 	kms->funcs->complete_commit(kms, state);
 
-	end_atomic(priv, c->crtc_mask, c->plane_mask);
+	drm_atomic_state_put(state);
+
+	commit_destroy(c);
 }
 
 static void _msm_drm_commit_work_cb(struct kthread_work *work)
