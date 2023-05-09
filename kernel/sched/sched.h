@@ -1017,9 +1017,7 @@ struct rq {
 #endif
 
 #ifdef CONFIG_SMP
-#if SCHED_FEAT_TTWU_QUEUE
 	struct llist_head wake_list;
-#endif
 #endif
 
 #ifdef CONFIG_CPU_IDLE

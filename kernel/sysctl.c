@@ -128,6 +128,7 @@ static int __maybe_unused two = 2;
 static int __maybe_unused three = 3;
 static int __maybe_unused four = 4;
 static unsigned long zero_ul;
+static unsigned long one_ul = 1;
 static unsigned long long_max = LONG_MAX;
 static int one_hundred = 100;
 static int one_thousand = 1000;
@@ -327,8 +328,8 @@ static struct ctl_table sysctl_base_table[] = {
 };
 
 #ifdef CONFIG_SCHED_DEBUG
-static int min_sched_granularity_ns = 100000;		/* 100 usecs */
-static int max_sched_granularity_ns = NSEC_PER_SEC;	/* 1 second */
+static int min_sched_granularity_ns = 1000000;		/* 100 usecs */
+static int max_sched_granularity_ns = 1000000;	/* 1 second */
 static int min_wakeup_granularity_ns;			/* 0 usecs */
 static int max_wakeup_granularity_ns = NSEC_PER_SEC;	/* 1 second */
 #ifdef CONFIG_SMP
@@ -339,7 +340,7 @@ static int max_sched_tunable_scaling = SCHED_TUNABLESCALING_END-1;
 
 #ifdef CONFIG_COMPACTION
 static int min_extfrag_threshold;
-static int max_extfrag_threshold = 1000;
+static int max_extfrag_threshold = 750;
 #endif
 
 static struct ctl_table kern_table[] = {
@@ -1526,6 +1527,23 @@ static struct ctl_table vm_table[] = {
 		.mode		= 0644,
 		.proc_handler	= proc_dointvec_minmax,
 		.extra1		= &zero,
+	},
+	{
+		.procname	= "dirty_background_ratio",
+		.data		= &dirty_background_ratio,
+		.maxlen		= sizeof(dirty_background_ratio),
+		.mode		= 0644,
+		.proc_handler	= dirty_background_ratio_handler,
+		.extra1		= &zero,
+		.extra2		= &one_hundred,
+	},
+	{
+		.procname	= "dirty_background_bytes",
+		.data		= &dirty_background_bytes,
+		.maxlen		= sizeof(dirty_background_bytes),
+		.mode		= 0644,
+		.proc_handler	= dirty_background_bytes_handler,
+		.extra1		= &one_ul,
 	},
 	{
 		.procname	= "dirty_ratio",
