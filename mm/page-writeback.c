@@ -71,7 +71,7 @@ static long ratelimit_pages = 256;
 /*
  * Start background writeback (via writeback threads) at this percentage
  */
-int dirty_background_ratio = 3;
+int dirty_background_ratio = 8;
 
 /*
  * dirty_background_bytes starts at 0 (disabled) so that it is a function of
