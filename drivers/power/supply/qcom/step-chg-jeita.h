@@ -29,6 +29,24 @@
 #define FFC_CHG_TERM_TEMP_THRESHOLD	390
 #define FFC_LOW_TEMP_CHG_TERM_CURRENT	-980
 #define FFC_HIGH_TEMP_CHG_TERM_CURRENT	-1110
+<<<<<<< HEAD
+=======
+=======
+#define BATT_COOL_THRESHOLD		150
+#define BATT_WARM_THRESHOLD		480
+#define FFC_CHG_TERM_TEMP_THRESHOLD	400
+#define FFC_LOW_TEMP_CHG_TERM_CURRENT	-980
+#define FFC_HIGH_TEMP_CHG_TERM_CURRENT	-1110
+#else
+#define MAX_STEP_CHG_ENTRIES	5
+#define BATT_COOL_THRESHOLD		150
+#define BATT_WARM_THRESHOLD		450
+#define FFC_CHG_TERM_TEMP_THRESHOLD	350
+#define FFC_LOW_TEMP_CHG_TERM_CURRENT	-980
+#define FFC_HIGH_TEMP_CHG_TERM_CURRENT	-1110
+#endif
+>>>>>>> 9cd482e28838 (import power supply)
+>>>>>>> c886fd04c1c7 (configure charger thermals, vdso32 and latency defconfig values)
 
 enum hvdcp3_class_type {
 	HVDCP3_CLASS_NONE = 0,
