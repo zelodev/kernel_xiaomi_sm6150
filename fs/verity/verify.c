@@ -287,7 +287,7 @@ int __init fsverity_init_workqueue(void)
 	 * which blocks reads from completing, over regular application tasks.
 	 */
 	fsverity_read_workqueue = alloc_workqueue("fsverity_read_queue",
-						  WQ_UNBOUND | WQ_HIGHPRI,
+						  WQ_HIGHPRI,
 						  num_online_cpus());
 	if (!fsverity_read_workqueue)
 		return -ENOMEM;
