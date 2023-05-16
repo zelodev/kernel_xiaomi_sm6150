@@ -987,7 +987,11 @@ static int ci_hdrc_probe(struct platform_device *pdev)
 	ret = ci_usb_phy_init(ci);
 	if (ret) {
 		dev_err(dev, "unable to init phy: %d\n", ret);
+<<<<<<< HEAD
 		goto ulpi_exit;
+=======
+		return ret;
+>>>>>>> 053487a69ed6 (import usb)
 	}
 
 	ci->hw_bank.phys = res->start;
