@@ -1418,6 +1418,7 @@ static inline int hrtimer_clockid_to_base(clockid_t clock_id)
 static void __hrtimer_init(struct hrtimer *timer, clockid_t clock_id,
 			   enum hrtimer_mode mode)
 {
+	int base;
 	bool softtimer = !!(mode & HRTIMER_MODE_SOFT);
 	struct hrtimer_cpu_base *cpu_base;
 
