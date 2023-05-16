@@ -110,11 +110,7 @@ module_param_named(sleep_disabled, sleep_disabled, bool, 0664);
  */
 inline s32 msm_cpuidle_get_deep_idle_latency(void)
 {
-<<<<<<< HEAD
 	return 2;
-=======
-	return 100;
->>>>>>> 1fbd772e9584 (lpm-levels: Allow CPU to idle when executing audio code)
 }
 EXPORT_SYMBOL(msm_cpuidle_get_deep_idle_latency);
 

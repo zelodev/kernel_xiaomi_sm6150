@@ -1420,7 +1420,6 @@ static void __hrtimer_init(struct hrtimer *timer, clockid_t clock_id,
 	bool softtimer;
 	int base;
 	struct hrtimer_cpu_base *cpu_base;
-	int base;
 
 	/*
 	 * On PREEMPT_RT enabled kernels hrtimers which are not explicitely
@@ -1841,8 +1840,7 @@ static bool task_is_realtime(struct task_struct *tsk)
 
 static void __hrtimer_init_sleeper(struct hrtimer_sleeper *sl,
 				   clockid_t clock_id,
-				   enum hrtimer_mode mode,
-				   struct task_struct *task)
+				   enum hrtimer_mode mode)
 {
 #ifdef CONFIG_PREEMPT_RT_FULL
 	if (!(mode & (HRTIMER_MODE_SOFT | HRTIMER_MODE_HARD))) {

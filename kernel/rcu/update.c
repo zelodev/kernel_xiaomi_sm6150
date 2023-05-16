@@ -62,7 +62,6 @@
 #endif
 #define MODULE_PARAM_PREFIX "rcupdate."
 
-#ifndef CONFIG_TINY_RCU
 extern int rcu_expedited; /* from sysctl */
 module_param(rcu_expedited, int, 0);
 extern int rcu_normal; /* from sysctl */
