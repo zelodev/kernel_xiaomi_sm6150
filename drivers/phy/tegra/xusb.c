@@ -596,7 +596,10 @@ static int tegra_xusb_add_usb2_port(struct tegra_xusb_padctl *padctl,
 	usb2->base.lane = usb2->base.ops->map(&usb2->base);
 	if (IS_ERR(usb2->base.lane)) {
 		err = PTR_ERR(usb2->base.lane);
+<<<<<<< HEAD
 		tegra_xusb_port_unregister(&usb2->base);
+=======
+>>>>>>> 8807b86b07b8 (import phy)
 		goto out;
 	}
 
@@ -649,7 +652,10 @@ static int tegra_xusb_add_ulpi_port(struct tegra_xusb_padctl *padctl,
 	ulpi->base.lane = ulpi->base.ops->map(&ulpi->base);
 	if (IS_ERR(ulpi->base.lane)) {
 		err = PTR_ERR(ulpi->base.lane);
+<<<<<<< HEAD
 		tegra_xusb_port_unregister(&ulpi->base);
+=======
+>>>>>>> 8807b86b07b8 (import phy)
 		goto out;
 	}
 
