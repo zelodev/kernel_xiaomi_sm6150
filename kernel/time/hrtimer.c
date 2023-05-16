@@ -1165,9 +1165,10 @@ void hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
 	 * match on CONFIG_PREEMPT_RT = n. With PREEMPT_RT check the hard
 	 * expiry mode because unmarked timers are moved to softirq expiry.
 	 */
-#ifndef CONFIG_PREEMPT_RT_BASE
-	WARN_ON_ONCE(!(mode & HRTIMER_MODE_SOFT) ^ !timer->is_soft);
-#endif
+	if (!IS_ENABLED(CONFIG_PREEMPT_RT))
+		WARN_ON_ONCE(!(mode & HRTIMER_MODE_SOFT) ^ !timer->is_soft);
+	else
+		WARN_ON_ONCE(!(mode & HRTIMER_MODE_HARD) ^ !timer->is_hard);
 
 	base = lock_hrtimer_base(timer, &flags);
 
@@ -1417,8 +1418,7 @@ static inline int hrtimer_clockid_to_base(clockid_t clock_id)
 static void __hrtimer_init(struct hrtimer *timer, clockid_t clock_id,
 			   enum hrtimer_mode mode)
 {
-	bool softtimer;
-	int base;
+	bool softtimer = !!(mode & HRTIMER_MODE_SOFT);
 	struct hrtimer_cpu_base *cpu_base;
 
 	/*
@@ -1429,13 +1429,6 @@ static void __hrtimer_init(struct hrtimer *timer, clockid_t clock_id,
 	 */
 	if (IS_ENABLED(CONFIG_PREEMPT_RT) && !(mode & HRTIMER_MODE_HARD))
 		softtimer = true;
-
-	softtimer = !!(mode & HRTIMER_MODE_SOFT);
-#ifdef CONFIG_PREEMPT_RT_FULL
-	if (!softtimer && !(mode & HRTIMER_MODE_HARD))
-		softtimer = true;
-#endif
-	base = softtimer ? HRTIMER_MAX_CLOCK_BASES / 2 : 0;
 
 	memset(timer, 0, sizeof(struct hrtimer));
 
@@ -1825,31 +1818,58 @@ static enum hrtimer_restart hrtimer_wakeup(struct hrtimer *timer)
 	return HRTIMER_NORESTART;
 }
 
-#ifdef CONFIG_PREEMPT_RT_FULL
-static bool task_is_realtime(struct task_struct *tsk)
-{
-	int policy = tsk->policy;
-
-	if (policy == SCHED_FIFO || policy == SCHED_RR)
-		return true;
-	if (policy == SCHED_DEADLINE)
-		return true;
-	return false;
-}
-#endif
-
-static void __hrtimer_init_sleeper(struct hrtimer_sleeper *sl,
-				   clockid_t clock_id,
+/**
+ * hrtimer_sleeper_start_expires - Start a hrtimer sleeper timer
+ * @sl:		sleeper to be started
+ * @mode:	timer mode abs/rel
+ *
+ * Wrapper around hrtimer_start_expires() for hrtimer_sleeper based timers
+ * to allow PREEMPT_RT to tweak the delivery mode (soft/hardirq context)
+ */
+void hrtimer_sleeper_start_expires(struct hrtimer_sleeper *sl,
 				   enum hrtimer_mode mode)
 {
-#ifdef CONFIG_PREEMPT_RT_FULL
-	if (!(mode & (HRTIMER_MODE_SOFT | HRTIMER_MODE_HARD))) {
-		if (task_is_realtime(current) || system_state != SYSTEM_RUNNING)
+	/*
+	 * Make the enqueue delivery mode check work on RT. If the sleeper
+	 * was initialized for hard interrupt delivery, force the mode bit.
+	 * This is a special case for hrtimer_sleepers because
+	 * hrtimer_init_sleeper() determines the delivery mode on RT so the
+	 * fiddling with this decision is avoided at the call sites.
+	 */
+	if (IS_ENABLED(CONFIG_PREEMPT_RT) && sl->timer.is_hard)
+		mode |= HRTIMER_MODE_HARD;
+
+	hrtimer_start_expires(&sl->timer, mode);
+}
+EXPORT_SYMBOL_GPL(hrtimer_sleeper_start_expires);
+
+static void __hrtimer_init_sleeper(struct hrtimer_sleeper *sl,
+				   clockid_t clock_id, enum hrtimer_mode mode)
+{
+	/*
+	 * On PREEMPT_RT enabled kernels hrtimers which are not explicitely
+	 * marked for hard interrupt expiry mode are moved into soft
+	 * interrupt context either for latency reasons or because the
+	 * hrtimer callback takes regular spinlocks or invokes other
+	 * functions which are not suitable for hard interrupt context on
+	 * PREEMPT_RT.
+	 *
+	 * The hrtimer_sleeper callback is RT compatible in hard interrupt
+	 * context, but there is a latency concern: Untrusted userspace can
+	 * spawn many threads which arm timers for the same expiry time on
+	 * the same CPU. That causes a latency spike due to the wakeup of
+	 * a gazillion threads.
+	 *
+	 * OTOH, priviledged real-time user space applications rely on the
+	 * low latency of hard interrupt wakeups. If the current task is in
+	 * a real-time scheduling class, mark the mode for hard interrupt
+	 * expiry.
+	 */
+	if (IS_ENABLED(CONFIG_PREEMPT_RT)) {
+		if (task_is_realtime(current) && !(mode & HRTIMER_MODE_SOFT))
 			mode |= HRTIMER_MODE_HARD;
-		else
-			mode |= HRTIMER_MODE_SOFT;
 	}
-#endif
+
 	__hrtimer_init(&sl->timer, clock_id, mode);
 	sl->timer.function = hrtimer_wakeup;
 	sl->task = current;
