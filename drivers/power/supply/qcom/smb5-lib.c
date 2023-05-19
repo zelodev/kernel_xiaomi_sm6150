@@ -4329,7 +4329,7 @@ int smblib_get_prop_dc_current_max(struct smb_charger *chg,
 int smblib_get_prop_dc_voltage_max(struct smb_charger *chg,
 				    union power_supply_propval *val)
 {
-	val->intval = MICRO_12V;
+	val->intval = MICRO_9V;
 	return 0;
 }
 
@@ -4549,7 +4549,7 @@ int smblib_get_prop_usb_voltage_max_design(struct smb_charger *chg,
 		if (chg->chg_param.smb_version == PMI632_SUBTYPE)
 			val->intval = MICRO_9V;
 		else
-			val->intval = MICRO_12V;
+			val->intval = MICRO_9V;
 		break;
 	default:
 		val->intval = MICRO_5V;
@@ -4578,7 +4578,7 @@ int smblib_get_prop_usb_voltage_max(struct smb_charger *chg,
 		if (chg->chg_param.smb_version == PMI632_SUBTYPE)
 			val->intval = MICRO_9V;
 		else
-			val->intval = MICRO_12V;
+			val->intval = MICRO_9V;
 		break;
 	case POWER_SUPPLY_TYPE_USB_PD:
 		val->intval = chg->voltage_max_uv;
@@ -4600,7 +4600,7 @@ static int smblib_estimate_adaptor_voltage(struct smb_charger *chg,
 
 	switch (chg->real_charger_type) {
 	case POWER_SUPPLY_TYPE_USB_HVDCP:
-		val->intval = MICRO_12V;
+		val->intval = MICRO_9V;
 		break;
 	case POWER_SUPPLY_TYPE_USB_HVDCP_3P5:
 		step_uv = HVDCP3P5_STEP_UV;
