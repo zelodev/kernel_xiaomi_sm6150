@@ -1416,11 +1416,8 @@ static int dwc3_probe(struct platform_device *pdev)
 		goto err0;
 	}
 
-<<<<<<< HEAD
-	dwc->dwc_wq = alloc_ordered_workqueue("dwc_wq", 0);
-=======
 	dwc->dwc_wq = alloc_ordered_workqueue("dwc_wq", WQ_HIGHPRI);
->>>>>>> 053487a69ed6 (import usb)
+
 	if (!dwc->dwc_wq) {
 		dev_err(dev,
 			"%s: Unable to create workqueue dwc_wq\n", __func__);
@@ -1470,22 +1467,14 @@ static int dwc3_probe(struct platform_device *pdev)
 	dwc->dwc_ipc_log_ctxt = ipc_log_context_create(NUM_LOG_PAGES,
 					dev_name(dwc->dev), 0);
 	if (!dwc->dwc_ipc_log_ctxt)
-<<<<<<< HEAD
-		dev_err(dwc->dev, "Error getting ipc_log_ctxt\n");
-=======
 		dev_dbg(dwc->dev, "Error getting ipc_log_ctxt\n");
->>>>>>> 053487a69ed6 (import usb)
 
 	snprintf(dma_ipc_log_ctx_name, sizeof(dma_ipc_log_ctx_name),
 					"%s.ep_events", dev_name(dwc->dev));
 	dwc->dwc_dma_ipc_log_ctxt = ipc_log_context_create(NUM_LOG_PAGES,
 						dma_ipc_log_ctx_name, 0);
 	if (!dwc->dwc_dma_ipc_log_ctxt)
-<<<<<<< HEAD
-		dev_err(dwc->dev, "Error getting ipc_log_ctxt for ep_events\n");
-=======
 		dev_dbg(dwc->dev, "Error getting ipc_log_ctxt for ep_events\n");
->>>>>>> 053487a69ed6 (import usb)
 
 	dwc3_instance[count] = dwc;
 	dwc->index = count;
@@ -1528,14 +1517,12 @@ static int dwc3_remove(struct platform_device *pdev)
 
 	dwc3_gadget_exit(dwc);
 	dwc3_debugfs_exit(dwc);
-<<<<<<< HEAD
 
 	dwc3_core_exit(dwc);
 	dwc3_ulpi_exit(dwc);
 
 	pm_runtime_allow(&pdev->dev);
-=======
->>>>>>> 053487a69ed6 (import usb)
+
 	pm_runtime_disable(&pdev->dev);
 	pm_runtime_put_noidle(&pdev->dev);
 	pm_runtime_set_suspended(&pdev->dev);
@@ -1632,11 +1619,7 @@ static int dwc3_runtime_suspend(struct device *dev)
 	if (ret)
 		return ret;
 
-<<<<<<< HEAD
-	device_init_wakeup(dev, false);
-=======
 	device_init_wakeup(dev, true);
->>>>>>> 053487a69ed6 (import usb)
 
 	return 0;
 }
