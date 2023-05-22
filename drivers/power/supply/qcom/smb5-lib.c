@@ -1129,7 +1129,7 @@ static int smblib_set_usb_pd_allowed_voltage(struct smb_charger *chg,
 	} else if (min_allowed_uv == MICRO_9V && max_allowed_uv == MICRO_9V) {
 		vbus_allowance = FORCE_9V;
 	} else if (min_allowed_uv == MICRO_12V && max_allowed_uv == MICRO_12V) {
-		vbus_allowance = FORCE_12V;
+		vbus_allowance = FORCE_9V;
 	} else if (min_allowed_uv < MICRO_12V && max_allowed_uv <= MICRO_12V) {
 		vbus_allowance = CONTINUOUS;
 	} else {
@@ -3674,12 +3674,12 @@ int smblib_dp_dm(struct smb_charger *chg, int val)
 	case POWER_SUPPLY_DP_DM_FORCE_12V:
 		/* we use our own qc2 method to raise to 9V, so just return here */
 		return 0;
-		if (chg->qc2_unsupported_voltage == QC2_NON_COMPLIANT_12V) {
-			smblib_err(chg, "Couldn't set 12V: unsupported\n");
+		if (chg->qc2_unsupported_voltage == QC2_NON_COMPLIANT_9V) {
+			smblib_err(chg, "Couldn't set 9V: unsupported\n");
 			return -EINVAL;
 		}
 
-		/* If we are increasing voltage to get to 12V, set FSW first */
+		/* If we are increasing voltage to get to 9V, set FSW first */
 		rc = smblib_read(chg, QC_CHANGE_STATUS_REG, &stat);
 		if (rc < 0) {
 			smblib_err(chg, "Couldn't read QC_CHANGE_STATUS_REG rc=%d\n",
@@ -3691,12 +3691,12 @@ int smblib_dp_dm(struct smb_charger *chg, int val)
 			/* Force 1A ICL before requesting higher voltage */
 			vote(chg->usb_icl_votable, HVDCP2_ICL_VOTER,
 					true, 1000000);
-			smblib_hvdcp_set_fsw(chg, QC_12V_BIT);
+			smblib_hvdcp_set_fsw(chg, QC_9V_BIT);
 		}
 
-		rc = smblib_force_vbus_voltage(chg, FORCE_12V_BIT);
+		rc = smblib_force_vbus_voltage(chg, FORCE_9V_BIT);
 		if (rc < 0)
-			pr_err("Failed to force 12V\n");
+			pr_err("Failed to force 9V\n");
 
 		vote(chg->usb_icl_votable, SW_ICL_MAX_VOTER, true,
 				HVDCP2_CURRENT_UA);
@@ -7043,7 +7043,7 @@ static int qc3p5_authenticate(struct smb_charger *chg)
 
 	chg->qc3p5_authenticated = false;
 	chg->qc3p5_authentication_started = true;
-	chg->qc3p5_power_limit_w = 40;//Default to lowest power limit of 18W
+	chg->qc3p5_power_limit_w = 18;//Default to lowest power limit of 18W
 
 	/* Set ICL to 500mA during QC3.5 Authentication */
 	vote(chg->usb_icl_votable, QC3P5_VOTER, true, USBIN_500MA);
