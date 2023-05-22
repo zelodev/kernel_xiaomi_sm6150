@@ -96,12 +96,8 @@ static unsigned long get_target_state(struct thermal_instance *instance,
 		break;
 	case THERMAL_TREND_DROPPING:
 	case THERMAL_TREND_STABLE:
-<<<<<<< HEAD
 		if (cur_state <= instance->lower ||
 			instance->target <= instance->lower) {
-=======
-		if (cur_state <= instance->lower) {
->>>>>>> 31d900ac8b24 (thermal: step_wise: Handle the temperature stable trend)
 			if (!throttle)
 				next_target = THERMAL_NO_TARGET;
 		} else {
