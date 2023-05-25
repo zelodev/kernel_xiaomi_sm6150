@@ -37,9 +37,9 @@
  */
 #define SCHED_FEAT_WAKEUP_PREEMPTION 1
 
-#define SCHED_FEAT_HRTICK 1
+#define SCHED_FEAT_HRTICK 0
 #define SCHED_FEAT_DOUBLE_TICK 0
-#define SCHED_FEAT_LB_BIAS 0
+#define SCHED_FEAT_LB_BIAS 1
 
 /*
  * Decrement CPU capacity based on time not spent running tasks
