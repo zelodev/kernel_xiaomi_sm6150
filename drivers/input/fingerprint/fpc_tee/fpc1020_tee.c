@@ -792,7 +792,7 @@ static ssize_t vendor_update(struct device *dev,
 			     struct device_attribute *attr,
 			     const char *buf, size_t count)
 {
-	int rc;
+	int rc = 0;
 	return rc ? rc : count;
 }
 
