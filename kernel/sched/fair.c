@@ -131,7 +131,7 @@ static unsigned int sched_nr_latency = 20;
  * After fork, child runs first. If set to 0 (default) then
  * parent will (try to) run first.
  */
-unsigned int __read_mostly sysctl_sched_child_runs_first = 1;
+unsigned int sysctl_sched_child_runs_first = 1;
 
 /*
  * To enable/disable energy aware feature.
