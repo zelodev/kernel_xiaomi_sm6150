@@ -234,7 +234,7 @@ enum ln8000_adc_hibernate_delay_desc {
 #define LN8000_NTC_ALARM_CFG_DEFAULT    226         /* NTC alarm threshold (~40C) */
 #define LN8000_NTC_SHUTDOWN_CFG         2           /* NTC shutdown config (-16LSB ~ 4.3C) */
 #define LN8000_DEFAULT_FSW_CFG          8           /* 8=440kHz, switching freq */
-#define LN8000_IIN_CFG_DEFAULT          3000000     /* 2A=2,000,000uA, input current limit */
+#define LN8000_IIN_CFG_DEFAULT          2000000     /* 2A=2,000,000uA, input current limit */
 
 /* bus protection values for QC */
 #define BUS_OVP_FOR_QC                  13000000 /* ln8000 didn't used 10V, (support tot 6.5V, 11V, 12V, 13V) */
