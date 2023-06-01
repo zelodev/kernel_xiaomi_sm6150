@@ -1082,8 +1082,7 @@ void cp_statemachine(unsigned int port)
 
 	case CP_STATE_FLASH2_ENTRY_3:
 		if (sys_config.qc3p5_supported) {
-			if (pm_state.bq2597x.bus_error_status == VBUS_ERROR_HIGH
-				|| pm_state.bq2597x.vbus_volt > (pm_state.bq2597x.vbat_volt * 2 + BUS_VOLT_INIT_UP + 200)) {
+			if (pm_state.bq2597x.bus_error_status == VBUS_ERROR_HIGH) {
 				pr_err("vbus=%d, too high to open cp switcher, decrease it.\n",
 						pm_state.bq2597x.vbus_volt);
 				cp_tune_vbus_volt(VOLT_DOWN);
