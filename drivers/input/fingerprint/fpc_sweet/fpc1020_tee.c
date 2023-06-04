@@ -25,9 +25,7 @@
  * as published by the Free Software Foundation.
  */
 
-#ifdef CONFIG_MACH_XIAOMI_SWEET
 #define FPC_DRM_INTERFACE_WA
-#endif
 
 #define CONFIG_FINGERPRINT_FP_VREG_CONTROL
 #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
