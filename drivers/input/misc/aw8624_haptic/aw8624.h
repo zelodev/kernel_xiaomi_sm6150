@@ -23,7 +23,6 @@
 #include <linux/leds.h>
 #include <linux/atomic.h>
 
-
 /*********************************************************
  *
  * marco
@@ -38,8 +37,8 @@
 
 #define HAPTIC_MAX_TIMEOUT                  10000
 
-#define AW8624_VBAT_REFER                   4400
-#define AW8624_VBAT_MIN                     3500
+#define AW8624_VBAT_REFER                   4200
+#define AW8624_VBAT_MIN                     3000
 #define AW8624_VBAT_MAX                     4500
 #define ENABLE_PIN_CONTROL
 
@@ -52,7 +51,6 @@
 #define AW8624_CONT_PLAYBACK_MODE       AW8624_BIT_CONT_CTRL_CLOSE_PLAYBACK
 static int wf_repeat[8] = { 1, 2, 4, 8, 16, 32, 64, 128 };
 static int wf_s_repeat[4] = { 1, 2, 4, 8 };
-
 
 /*
  * trig default high level
@@ -85,7 +83,6 @@ static int wf_s_repeat[4] = { 1, 2, 4, 8 };
 *  enable   default_level  dual_edge  first_seq   second_seq
 */
 #define AW8624_TRIG_NUM                     3
-
 
 enum aw8624_flags {
 	AW8624_FLAG_NONR = 0,
@@ -262,6 +259,7 @@ enum own_cali {
 	F0_CALI,
 	OSC_CALI,
 };
+
 struct qti_hap_effect {
 	int id;
 	u8 *pattern;
@@ -297,7 +295,7 @@ struct qti_hap_config {
 #endif
 
 #ifdef ENABLE_PIN_CONTROL
-const char * const pctl_names[] = {
+const char *const pctl_names[] = {
 	"aw8624_reset_reset",
 	"aw8624_reset_active",
 	"aw8624_interrupt_active",
@@ -313,7 +311,6 @@ struct aw8624 {
 	int enable_pin_control;
 	struct work_struct vibrator_work;
 	struct work_struct rtp_work;
-	struct work_struct set_gain_work;
 	struct delayed_work ram_work;
 	struct delayed_work stop_work;
 
@@ -342,7 +339,6 @@ struct aw8624 {
 	unsigned char activate_mode;
 
 	unsigned char auto_boost;
-	unsigned char wk_lock_flag;
 
 	int state;
 	int duration;
@@ -350,7 +346,7 @@ struct aw8624 {
 	int index;
 	int vmax;
 	int gain;
-	u16 new_gain;
+	int ulevel;
 	int f0_value;
 	unsigned char level;
 
@@ -380,8 +376,10 @@ struct aw8624 {
 	struct aw8624_dts_info info;
 	atomic_t is_in_rtp_loop;
 	atomic_t exit_in_rtp_loop;
-	wait_queue_head_t wait_q;//wait queue for exit irq mode
-	wait_queue_head_t stop_wait_q;  //wait queue for stop rtp mode
+	wait_queue_head_t wait_q;	//wait queue for exit irq mode
+	wait_queue_head_t stop_wait_q;	//wait queue for stop rtp mode
+	atomic_t is_in_irq;
+	atomic_t exit_in_irq;
 	struct workqueue_struct *work_queue;
 
 #ifdef INPUT_DEV
@@ -414,6 +412,36 @@ struct aw8624 {
 	int test_val;
 #endif
 };
+
+/*2019.12.19 longcheer zhangjunwei1 start*/
+/*achieve the debug function*/
+#define VIB_DEBUG_EN  0
+#if VIB_DEBUG_EN
+#define VIB_DEBUG(fmt, args...) do { \
+    printk("[AWINIC_HAPTIC]%s:"fmt"\n", __func__, ##args); \
+} while (0)
+
+#define VIB_FUNC_ENTER() do { \
+    printk("[AWINIC_HAPTIC]%s: Enter\n", __func__); \
+} while (0)
+
+#define VIB_FUNC_EXIT() do { \
+    printk("[AWINIC_HAPTIC]%s: Exit(%d)\n", __func__, __LINE__); \
+} while (0)
+#else
+#define VIB_DEBUG(fmt, args...)
+#define VIB_FUNC_ENTER()
+#define VIB_FUNC_EXIT()
+#endif
+
+#define VIB_INFO(fmt, args...) do { \
+    printk(KERN_INFO "[AWINIC_HAPTIC/I]%s:"fmt"\n", __func__, ##args); \
+} while (0)
+
+#define VIB_ERROR(fmt, args...) do { \
+    printk(KERN_ERR "[AWINIC_HAPTIC/E]%s:"fmt"\n", __func__, ##args); \
+} while (0)
+/*2019.12.19 longcheer zhangjunwei1 end*/
 
 struct aw8624_container {
 	int len;
@@ -452,4 +480,3 @@ struct aw8624_que_seq {
 						unsigned int)
 
 #endif
-
