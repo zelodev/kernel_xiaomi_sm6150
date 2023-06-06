@@ -391,11 +391,7 @@ static int tz_get_target_freq(struct devfreq *devfreq, unsigned long *freq)
 
 		scm_data[0] = level;
 		scm_data[1] = priv->bin.total_time;
-		if (kp_active_mode() == 1) {
-			scm_data[2] = priv->bin.busy_time + (level * adrenoboost);
-		} else {
-			scm_data[2] = priv->bin.busy_time * (3 / 2) + (level * adrenoboost);
-		}
+		
 		if (refresh_rate > 60)
 			scm_data[2] = priv->bin.busy_time * refresh_rate / 60;
 		else
