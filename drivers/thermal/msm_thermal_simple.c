@@ -11,7 +11,7 @@
 #include <linux/of.h>
 #include <linux/platform_device.h>
 #include <linux/slab.h>
-#include <linux/qpnp/qpnp-adc.h>
+#include <linux/thermal.h>
 
 #define OF_READ_U32(node, prop, dst)						\
 ({										\
@@ -32,9 +32,7 @@ struct thermal_drv {
 	struct delayed_work throttle_work;
 	struct workqueue_struct *wq;
 	struct thermal_zone *zones;
-	struct qpnp_vadc_chip *vadc_dev;
 	struct thermal_zone *curr_zone;
-	enum qpnp_vadc_channels adc_chan;
 	u32 poll_jiffies;
 	u32 start_delay;
 	u32 nr_zones;
@@ -42,14 +40,17 @@ struct thermal_drv {
 
 static void update_online_cpu_policy(void)
 {
-	u32 cpu;
+	unsigned int cpu;
 
-	/* Only one CPU from each cluster needs to be updated */
 	get_online_cpus();
-	cpu = cpumask_first_and(cpu_lp_mask, cpu_online_mask);
-	cpufreq_update_policy(cpu);
-	cpu = cpumask_first_and(cpu_perf_mask, cpu_online_mask);
-	cpufreq_update_policy(cpu);
+	for_each_possible_cpu(cpu) {
+		if (cpu_online(cpu)) {
+			if (cpumask_intersects(cpumask_of(cpu), cpu_lp_mask))
+				cpufreq_update_policy(cpu);
+			if (cpumask_intersects(cpumask_of(cpu), cpu_perf_mask))
+				cpufreq_update_policy(cpu);
+		}
+	}
 	put_online_cpus();
 }
 
@@ -58,22 +59,42 @@ static void thermal_throttle_worker(struct work_struct *work)
 	struct thermal_drv *t = container_of(to_delayed_work(work), typeof(*t),
 					     throttle_work);
 	struct thermal_zone *new_zone, *old_zone;
-	struct qpnp_vadc_result result;
-	s64 temp_deg;
-	int i, ret;
+	int temp = 0, temp_cpus_avg = 0, temp_batt = 0;
+	s64 temp_total = 0, temp_avg = 0;
+	short i = 0;
 
-	ret = qpnp_vadc_read(t->vadc_dev, t->adc_chan, &result);
-	if (ret) {
-		pr_err("Unable to read ADC channel, err: %d\n", ret);
-		goto reschedule;
+	/* Store average temperature of all CPU cores */
+	for (i; i < NR_CPUS; i++) {
+		char zone_name[15];
+		sprintf(zone_name, "cpu-1-%i-usr", i);
+		thermal_zone_get_temp(thermal_zone_get_zone_by_name(zone_name), &temp);
+		temp_total += temp;
 	}
 
-	temp_deg = result.physical;
+	temp_cpus_avg = temp_total / NR_CPUS;
+
+	/* Now let's also get battery temperature */
+	thermal_zone_get_temp(thermal_zone_get_zone_by_name("battery"), &temp_batt);
+
+	/* HQ autism coming up */
+	if (temp_batt <= 29000)
+		temp_avg = (temp_cpus_avg * 2 + temp_batt * 3) / 5;
+	else if (temp_batt > 30000 && temp_batt <= 37000)
+		temp_avg = (temp_cpus_avg * 3 + temp_batt * 2) / 5;
+	else if (temp_batt > 37000 && temp_batt <= 43000)
+		temp_avg = (temp_cpus_avg * 4 + temp_batt) / 5;
+	else if (temp_batt > 43000)
+		temp_avg = (temp_cpus_avg * 5 + temp_batt) / 6;
+
+	/* Emergency case */
+	if (temp_cpus_avg > 90000)
+		temp_avg = (temp_cpus_avg * 6 + temp_batt) / 7;
+
 	old_zone = t->curr_zone;
 	new_zone = NULL;
 
 	for (i = t->nr_zones - 1; i >= 0; i--) {
-		if (temp_deg >= t->zones[i].trip_deg) {
+		if (temp_avg >= t->zones[i].trip_deg) {
 			new_zone = t->zones + i;
 			break;
 		}
@@ -81,11 +102,11 @@ static void thermal_throttle_worker(struct work_struct *work)
 
 	/* Update thermal zone if it changed */
 	if (new_zone != old_zone) {
+		pr_info("temp: %i\n", temp_avg);
 		t->curr_zone = new_zone;
 		update_online_cpu_policy();
 	}
 
-reschedule:
 	queue_delayed_work(t->wq, &t->throttle_work, t->poll_jiffies);
 }
 
@@ -108,7 +129,7 @@ static int cpu_notifier_cb(struct notifier_block *nb, unsigned long val,
 		return NOTIFY_OK;
 
 	zone = t->curr_zone;
-
+	
 	if (zone) {
 		u32 target_freq = get_throttle_freq(zone, policy->cpu);
 
@@ -117,7 +138,7 @@ static int cpu_notifier_cb(struct notifier_block *nb, unsigned long val,
 	} else {
 		policy->max = policy->user_policy.max;
 	}
-
+	
 	if (policy->max < policy->min)
 		policy->min = policy->max;
 
@@ -129,18 +150,6 @@ static int msm_thermal_simple_parse_dt(struct platform_device *pdev,
 {
 	struct device_node *child, *node = pdev->dev.of_node;
 	int ret;
-
-	t->vadc_dev = qpnp_get_vadc(&pdev->dev, "thermal");
-	if (IS_ERR(t->vadc_dev)) {
-		ret = PTR_ERR(t->vadc_dev);
-		if (ret != -EPROBE_DEFER)
-			pr_err("VADC property missing\n");
-		return ret;
-	}
-
-	ret = OF_READ_U32(node, "qcom,adc-channel", t->adc_chan);
-	if (ret)
-		return ret;
 
 	ret = OF_READ_U32(node, "qcom,poll-ms", t->poll_jiffies);
 	if (ret)
