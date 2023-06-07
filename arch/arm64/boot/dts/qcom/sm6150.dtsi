@@ -2629,7 +2629,7 @@
 
 	cpu_cpu_llcc_bw: qcom,cpu-cpu-llcc-bw {
 		compatible = "qcom,devbw";
-		governor = "performance";
+		governor = "schedutil";
 		qcom,src-dst-ports =
 			<MSM_BUS_MASTER_AMPSS_M0 MSM_BUS_SLAVE_LLCC>;
 		qcom,active-only;
@@ -2663,7 +2663,7 @@
 
 	cpu_llcc_ddr_bw: qcom,cpu-llcc-ddr-bw {
 		compatible = "qcom,devbw";
-		governor = "performance";
+		governor = "schedutil";
 		qcom,src-dst-ports =
 			<MSM_BUS_MASTER_LLCC MSM_BUS_SLAVE_EBI_CH0>;
 		qcom,active-only;
@@ -2706,7 +2706,7 @@
 		compatible = "devfreq-simple-dev";
 		clock-names = "devfreq_clk";
 		clocks = <&clock_cpucc L3_CLUSTER0_VOTE_CLK>;
-		governor = "performance";
+		governor = "schedutil";
 	};
 
 	cpu0_cpu_l3_latmon: qcom,cpu0-cpu-l3-latmon {
@@ -2727,7 +2727,7 @@
 		compatible = "devfreq-simple-dev";
 		clock-names = "devfreq_clk";
 		clocks = <&clock_cpucc L3_CLUSTER1_VOTE_CLK>;
-		governor = "performance";
+		governor = "schedutil";
 	};
 
 	cpu6_cpu_l3_latmon: qcom,cpu6-cpu-l3-latmon {
@@ -2746,7 +2746,7 @@
 
 	cpu0_cpu_llcc_lat: qcom,cpu0-cpu-llcc-lat {
 		compatible = "qcom,devbw";
-		governor = "performance";
+		governor = "schedutil";
 		qcom,src-dst-ports =
 			<MSM_BUS_MASTER_AMPSS_M0 MSM_BUS_SLAVE_LLCC>;
 		qcom,active-only;
@@ -2768,7 +2768,7 @@
 
 	cpu6_cpu_llcc_lat: qcom,cpu6-cpu-llcc-lat {
 		compatible = "qcom,devbw";
-		governor = "performance";
+		governor = "schedutil";
 		qcom,src-dst-ports =
 			<MSM_BUS_MASTER_AMPSS_M0 MSM_BUS_SLAVE_LLCC>;
 		qcom,active-only;
@@ -2791,7 +2791,7 @@
 
 	cpu0_llcc_ddr_lat: qcom,cpu0-llcc-ddr-lat {
 		compatible = "qcom,devbw";
-		governor = "performance";
+		governor = "schedutil";
 		qcom,src-dst-ports =
 			<MSM_BUS_MASTER_LLCC MSM_BUS_SLAVE_EBI_CH0>;
 		qcom,active-only;
@@ -2814,7 +2814,7 @@
 
 	cpu6_llcc_ddr_lat: qcom,cpu6-llcc-ddr-lat {
 		compatible = "qcom,devbw";
-		governor = "performance";
+		governor = "schedutil";
 		qcom,src-dst-ports =
 			<MSM_BUS_MASTER_LLCC MSM_BUS_SLAVE_EBI_CH0>;
 		qcom,active-only;
@@ -2837,7 +2837,7 @@
 
 	cpu0_cpu_ddr_latfloor: qcom,cpu0-cpu-ddr-latfloor {
 		compatible = "qcom,devbw";
-		governor = "performance";
+		governor = "schedutil";
 		qcom,src-dst-ports =
 			<MSM_BUS_MASTER_LLCC MSM_BUS_SLAVE_EBI_CH0>;
 		qcom,active-only;
@@ -2857,7 +2857,7 @@
 
 	cpu6_cpu_ddr_latfloor: qcom,cpu6-cpu-ddr-latfloor {
 		compatible = "qcom,devbw";
-		governor = "performance";
+		governor = "schedutil";
 		qcom,src-dst-ports =
 			<MSM_BUS_MASTER_LLCC MSM_BUS_SLAVE_EBI_CH0>;
 		qcom,active-only;
