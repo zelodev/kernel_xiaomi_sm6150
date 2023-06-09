@@ -69,6 +69,7 @@ enum qmi_ts_sensor {
 	QMI_TS_WTR_PA_1_FR1,
 	QMI_TS_WTR_PA_2_FR1,
 	QMI_TS_WTR_PA_3_FR1,
+	QMI_TS_RF_CAL,
 	QMI_TS_MAX_NR
 };
 
@@ -131,6 +132,7 @@ static char sensor_clients[QMI_TS_MAX_NR][QMI_CLIENT_NAME_LENGTH] = {
 	{"qfe_wtr_pa1_fr1"},
 	{"qfe_wtr_pa2_fr1"},
 	{"qfe_wtr_pa3_fr1"},
+	{"rf_cal"},
 };
 
 static int32_t encode_qmi(int32_t val)

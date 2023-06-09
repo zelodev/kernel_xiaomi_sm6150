@@ -152,6 +152,10 @@ static struct qmi_dev_info device_clients[] = {
 	{
 		.dev_name = "cpr_cold",
 		.type = QMI_CDEV_MIN_LIMIT_TYPE,
+	},
+	{
+		.dev_name = "tmd_rf_cal",
+		.type = QMI_CDEV_MIN_LIMIT_TYPE,
 	}
 };
 
