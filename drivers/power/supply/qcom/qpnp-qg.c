@@ -1429,7 +1429,7 @@ static int qg_awake_cb(struct votable *votable, void *data, int awake,
 		return 0;
 
 	if (awake)
-		pm_wakeup_event(fg->dev, 500);
+		pm_wakeup_event(chip->dev, 500);
 	else
 		pm_relax(chip->dev);
 
