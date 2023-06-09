@@ -461,6 +461,15 @@ static void thermal_qmi_net_reset(struct qmi_handle *qmi)
 	}
 }
 
+#ifdef CONFIG_DEEPSLEEP
+static int qmi_unregister_cooling_device(struct qmi_cooling_device *qmi_cdev)
+{
+	thermal_cooling_device_unregister(qmi_cdev->cdev);
+	qmi_cdev->cdev = NULL;
+	return 0;
+}
+#endif
+
 static void thermal_qmi_del_server(struct qmi_handle *qmi,
 				    struct qmi_service *service)
 {
@@ -469,8 +478,13 @@ static void thermal_qmi_del_server(struct qmi_handle *qmi,
 						handle);
 	struct qmi_cooling_device *qmi_cdev = NULL;
 
-	list_for_each_entry(qmi_cdev, &tmd->tmd_cdev_list, qmi_node)
+	list_for_each_entry(qmi_cdev, &tmd->tmd_cdev_list, qmi_node) {
 		qmi_cdev->connection_active = false;
+#ifdef CONFIG_DEEPSLEEP
+		if (tmd->inst_id == 1)
+			qmi_unregister_cooling_device(qmi_cdev);
+#endif
+	}
 }
 
 static int thermal_qmi_new_server(struct qmi_handle *qmi,
