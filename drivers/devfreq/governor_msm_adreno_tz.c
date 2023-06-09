@@ -368,7 +368,8 @@ static int tz_get_target_freq(struct devfreq *devfreq, unsigned long *freq)
 	 */
 	if ((stats.total_time == 0) ||
 		(priv->bin.total_time < FLOOR) ||
-		(unsigned int) priv->bin.busy_time < MIN_BUSY) {
+		(unsigned int) priv->bin.busy_time < MIN_BUSY ||
+		devfreq->profile->max_state == 1) {
 		return 0;
 	}
 
