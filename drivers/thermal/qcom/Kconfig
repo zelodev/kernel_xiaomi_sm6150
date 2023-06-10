@@ -144,16 +144,6 @@ config QTI_BUS_SCALING_COOLING_DEVICE
 	   to meet the performance requirement under thermally constrained
 	   conditions.
 
-config MSM_THERMAL_SIMPLE
-	bool "Simple solution to monitor temperature and limit CPU frequency"
-	default n
-	help
-	  When properly configured, this driver monitors temperatures from a
-	  specified sensor and reduces the CPU's max frequency in response to
-	  the temperature crossing specified thermal zones. The temperature sensor
-	  use must be a specified ADC channel on a given VADC device, hence this
-	  driver's dependency on the chipset being an MSM product.
-
 config QTI_BCL_OFF_COOLING_DEVICE
 	tristate "QTI Ibat threshold update cooling devices"
 	depends on THERMAL_OF && QTI_THERMAL
