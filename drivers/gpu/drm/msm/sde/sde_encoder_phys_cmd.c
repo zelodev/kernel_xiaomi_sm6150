@@ -713,10 +713,30 @@ static int _sde_encoder_phys_cmd_wait_for_idle(
 	struct sde_encoder_wait_info wait_info = {0};
 	bool recovery_events;
 	int ret;
+	struct sde_hw_ctl *ctl;
+	bool wr_ptr_wait_success = true;
 
 	if (!phys_enc) {
 		SDE_ERROR("invalid encoder\n");
 		return -EINVAL;
+	}
+
+	ctl = phys_enc->hw_ctl;
+
+	if (sde_encoder_phys_cmd_is_master(phys_enc))
+		wr_ptr_wait_success = cmd_enc->wr_ptr_wait_success;
+
+	if (wr_ptr_wait_success &&
+	  (phys_enc->frame_trigger_mode == FRAME_DONE_WAIT_POSTED_START) &&
+	  ctl->ops.get_scheduler_status &&
+	  (ctl->ops.get_scheduler_status(ctl) & BIT(0)) &&
+	  atomic_add_unless(&phys_enc->pending_kickoff_cnt, -1, 0) &&
+	  phys_enc->parent_ops.handle_frame_done) {
+		phys_enc->parent_ops.handle_frame_done(
+			phys_enc->parent, phys_enc,
+			SDE_ENCODER_FRAME_EVENT_DONE |
+			SDE_ENCODER_FRAME_EVENT_SIGNAL_RELEASE_FENCE);
+		return 0;
 	}
 
 	if (atomic_read(&phys_enc->pending_kickoff_cnt) > 1)
@@ -738,9 +758,6 @@ static int _sde_encoder_phys_cmd_wait_for_idle(
 	ret = sde_encoder_helper_wait_for_irq(phys_enc, INTR_IDX_PINGPONG,
 			&wait_info);
 	if (ret == -ETIMEDOUT) {
-		if (_sde_encoder_phys_cmd_is_scheduler_idle(phys_enc))
-			return 0;
-
 		_sde_encoder_phys_cmd_handle_ppdone_timeout(phys_enc,
 				recovery_events);
 	} else if (!ret) {
