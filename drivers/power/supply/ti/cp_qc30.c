@@ -1226,7 +1226,7 @@ static int cp_qc30_notifier_call(struct notifier_block *nb,
 		cp_get_usb_type();
 		if (pm_state.usb_type == POWER_SUPPLY_TYPE_USB_HVDCP_3) {
 			if (!usb_hvdcp3_on) {
-				schedule_delayed_work(&pm_state.qc3_pm_work, 3*HZ);
+				schedule_delayed_work(&pm_state.qc3_pm_work, msecs_to_jiffies(300));
 				usb_hvdcp3_on = true;
 			} else {
 				schedule_delayed_work(&pm_state.qc3_pm_work, msecs_to_jiffies(300));
@@ -1234,7 +1234,7 @@ static int cp_qc30_notifier_call(struct notifier_block *nb,
 		} else if (sys_config.qc3p5_supported
 				&& pm_state.usb_type == POWER_SUPPLY_TYPE_USB_HVDCP_3P5) {
 			if (!usb_hvdcp3_on) {
-				schedule_delayed_work(&pm_state.qc3_pm_work, HZ);
+				schedule_delayed_work(&pm_state.qc3_pm_work, msecs_to_jiffies(100));
 				usb_hvdcp3_on = true;
 			} else {
 				schedule_delayed_work(&pm_state.qc3_pm_work, msecs_to_jiffies(100));
