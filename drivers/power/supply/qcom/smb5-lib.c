@@ -745,7 +745,7 @@ int smblib_set_charge_param(struct smb_charger *chg,
 		chg->cp_psy = power_supply_get_by_name("bq2597x-standalone");
 
 	if (!chg->cp_psy)
-		chg->cp_psy = power_supply_get_by_name("ln8000");
+		chg->cp_psy = power_supply_get_by_name("ln8000-charger");
 
 	if (chg->cp_psy && param->reg == CHGR_FLOAT_VOLTAGE_CFG_REG) {
 		power_supply_get_property(chg->cp_psy, POWER_SUPPLY_PROP_CP_VBAT_CALIBRATE, &val);
@@ -904,7 +904,7 @@ static int set_ln8000_fv(struct smb_charger *chg) {
 		chg->cp_psy = power_supply_get_by_name("bq2597x-standalone");
 
 		if (!chg->cp_psy)
-			chg->cp_psy = power_supply_get_by_name("ln8000");
+			chg->cp_psy = power_supply_get_by_name("ln8000-charger");
 
 		if (!chg->cp_psy) {
 			pr_err("cp_psy not found\n");
@@ -919,7 +919,7 @@ static int set_ln8000_fv(struct smb_charger *chg) {
 		return 0;
 	}
 
-	if (strcmp(val.strval, "ln8000") == 0) {
+	if (strcmp(val.strval, "ln8000-charger") == 0) {
 		vote(chg->fv_votable, BATT_LN8000_VOTER, true, 4470000);
 	}
 	return 0;
@@ -6651,7 +6651,7 @@ static int check_reduce_fcc_condition(struct smb_charger *chg)
 		chg->cp_psy = power_supply_get_by_name("bq2597x-standalone");
 
 		if (!chg->cp_psy)
-			chg->cp_psy = power_supply_get_by_name("ln8000");
+			chg->cp_psy = power_supply_get_by_name("ln8000-charger");
 
 		if (!chg->cp_psy) {
 			pr_err("cp_psy not found\n");
