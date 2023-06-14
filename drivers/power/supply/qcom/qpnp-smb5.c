@@ -4423,7 +4423,7 @@ static int smb5_probe(struct platform_device *pdev)
 	}
 
 	if (chg->reg_dump_enable) {
-		schedule_delayed_work(&chg->reg_work, msecs_to_jiffies(3 * MSEC_PER_SEC));
+		schedule_delayed_work(&chg->reg_work, 30 * HZ);
 	}
 
 	if (chg->early_status_report) {
