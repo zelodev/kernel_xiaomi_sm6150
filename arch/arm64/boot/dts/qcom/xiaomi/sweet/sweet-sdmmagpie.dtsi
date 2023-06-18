@@ -74,7 +74,7 @@ And public attribution of xiaomi platforms(like F3 and so and)
 		mi,qc3-ffc-bat-volt-max = <4470>;
 		mi,qc3-bat-curr-max = <5400>;
 		mi,qc3-bus-volt-max = <12000>;
-		mi,qc3-bus-curr-max = <3000>;
+		mi,qc3-bus-curr-max = <2100>;
 		mi,support-qc3p5-without-smb;
 	};
 
