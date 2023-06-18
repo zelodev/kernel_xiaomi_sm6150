@@ -737,48 +737,6 @@ static bool _sde_encoder_phys_cmd_is_ongoing_pptx(
 	return false;
 }
 
-static bool _sde_encoder_phys_cmd_is_scheduler_idle(
-		struct sde_encoder_phys *phys_enc)
-{
-	bool wr_ptr_wait_success = true;
-	unsigned long lock_flags;
-	bool ret = false;
-	struct sde_encoder_phys_cmd *cmd_enc =
-			to_sde_encoder_phys_cmd(phys_enc);
-	struct sde_hw_ctl *ctl = phys_enc->hw_ctl;
-
-	if (sde_encoder_phys_cmd_is_master(phys_enc))
-		wr_ptr_wait_success = cmd_enc->wr_ptr_wait_success;
-
-	/*
-	 * Handle cases where a pp-done interrupt is missed
-	 * due to irq latency with POSTED start
-	 */
-	if (wr_ptr_wait_success &&
-	  (phys_enc->frame_trigger_mode == FRAME_DONE_WAIT_POSTED_START) &&
-	  ctl->ops.get_scheduler_status &&
-	  (ctl->ops.get_scheduler_status(ctl) & BIT(0)) &&
-	  atomic_add_unless(&phys_enc->pending_kickoff_cnt, -1, 0) &&
-	  phys_enc->parent_ops.handle_frame_done) {
-
-		spin_lock_irqsave(phys_enc->enc_spinlock, lock_flags);
-		phys_enc->parent_ops.handle_frame_done(
-			phys_enc->parent, phys_enc,
-			SDE_ENCODER_FRAME_EVENT_DONE |
-			SDE_ENCODER_FRAME_EVENT_SIGNAL_RELEASE_FENCE);
-		spin_unlock_irqrestore(phys_enc->enc_spinlock, lock_flags);
-
-		SDE_EVT32(DRMID(phys_enc->parent),
-			phys_enc->hw_pp->idx - PINGPONG_0,
-			phys_enc->hw_intf->idx - INTF_0,
-			atomic_read(&phys_enc->pending_kickoff_cnt));
-
-			ret = true;
-	}
-
-	return ret;
-}
-
 static int _sde_encoder_phys_cmd_wait_for_idle(
 		struct sde_encoder_phys *phys_enc)
 {
@@ -793,9 +751,6 @@ static int _sde_encoder_phys_cmd_wait_for_idle(
 		return -EINVAL;
 	}
 
-	if (atomic_read(&phys_enc->pending_kickoff_cnt) > 1)
-		wait_info.count_check = 1;
-
 	wait_info.wq = &phys_enc->pending_kickoff_wq;
 	wait_info.atomic_cnt = &phys_enc->pending_kickoff_cnt;
 	wait_info.timeout_ms = KICKOFF_TIMEOUT_MS;
@@ -806,14 +761,9 @@ static int _sde_encoder_phys_cmd_wait_for_idle(
 	if (_sde_encoder_phys_is_ppsplit_slave(phys_enc))
 		return 0;
 
-	if (_sde_encoder_phys_cmd_is_scheduler_idle(phys_enc))
-		return 0;
-
 	ret = sde_encoder_helper_wait_for_irq(phys_enc, INTR_IDX_PINGPONG,
 			&wait_info);
 	if (ret == -ETIMEDOUT) {
-		if (_sde_encoder_phys_cmd_is_scheduler_idle(phys_enc))
-			return 0;
 
 		_sde_encoder_phys_cmd_handle_ppdone_timeout(phys_enc,
 				recovery_events);

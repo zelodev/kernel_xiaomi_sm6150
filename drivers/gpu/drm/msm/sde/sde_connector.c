@@ -2610,21 +2610,6 @@ struct drm_connector *sde_connector_init(struct drm_device *dev,
 				sizeof(dsi_display->panel->hdr_props),
 				CONNECTOR_PROP_HDR_INFO);
 		}
-
-		/* register esd irq and enable it after panel enabled */
-		if (dsi_display && dsi_display->panel &&
-			dsi_display->panel->esd_config.esd_err_irq_gpio > 0) {
-			rc = request_threaded_irq(dsi_display->panel->esd_config.esd_err_irq,
-							NULL, esd_err_irq_handle,
-							dsi_display->panel->esd_config.esd_err_irq_flags,
-							"esd_err_irq", c_conn);
-			if (rc < 0) {
-				pr_err("%s: request irq %d failed\n", __func__, dsi_display->panel->esd_config.esd_err_irq);
-					dsi_display->panel->esd_config.esd_err_irq = 0;
-			} else {
-				pr_info("%s: Request esd irq succeed!\n", __func__);
-			}
-		}
 	}
 
 	rc = sde_connector_get_info(&c_conn->base, &display_info);
