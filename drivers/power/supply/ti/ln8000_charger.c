@@ -803,13 +803,10 @@ static int psy_chg_get_ti_alarm_status(struct ln8000_info *info)
              (info->tbus_tbat_alarm << BUS_THERM_ALARM_SHIFT) |
              (info->tdie_alarm << DIE_THERM_ALARM_SHIFT));
 
-    if (info->vbus_uV < (info->vbat_uV * 2))
-        v_offset = 0;
-    else
-        v_offset = info->vbus_uV - (info->vbat_uV * 2);
-    /* after charging-enabled, When the input current rises above rcp_th(over 400mA), it activates rcp. */
+    v_offset = info->vbus_uV - (info->vbat_uV * 2);
+    /* after charging-enabled, When the input current rises above rcp_th(over 200mA), it activates rcp. */
     if (info->chg_en && !(info->rcp_en)) {
-        if (info->iin_uA > 400000) {
+        if (info->iin_uA > 200000 && v_offset > 300000) {
             ln8000_enable_rcp(info, 1);
             ln_info("enabled rcp\n");
         }
@@ -961,10 +958,6 @@ static int ln8000_charger_get_property(struct power_supply *psy,
 static int psy_chg_set_charging_enable(struct ln8000_info *info, int val)
 {
     int op_mode;
-
-    /* skip duplicate command of charging enable */
-    if (val == info->chg_en)
-        return 0;
 
     if (val) {
         ln_info("start charging\n");
@@ -1182,54 +1175,44 @@ static int ln8000_read_int_value(struct ln8000_info *info, u32 *reg_val)
 static void vac_ov_control_work(struct work_struct *work)
 {
 	struct ln8000_info *info = container_of(work, struct ln8000_info, vac_ov_work.work);
-    int i, cnt, adc_check_cnt, ta_detach_cnt, delay = 50;
+    int i, cnt, ta_detached, delay = 50;
     u32 sys_st;
     bool enable_vac_ov = 1;
 
-    adc_check_cnt = 0;
-    ta_detach_cnt = 0;
-    cnt = 10000 / delay;
+	ta_detached = 0;
+    cnt = 5000 / delay;
     for (i = 0; i < cnt; ++i) {
         ln8000_get_adc_data(info, LN8000_ADC_CH_VIN, &info->vbus_uV);
         ln8000_read_reg(info, LN8000_REG_SYS_STS, &sys_st);
 
         if (enable_vac_ov) {
-            /* Check ADC_VIN during the 10sec, if vin higher then 10V, disable to vac_ov */
+            /* Check ADC_VIN during the 5sec, if vin higher then 10V, disable to vac_ov */
             if (info->vbus_uV > 10000000) {
-                adc_check_cnt++;
-                ln_info("vin=%dmV, adc_check_cnt=%d\n", info->vbus_uV / 1000, adc_check_cnt);
-                if (adc_check_cnt > 2) {
-                    enable_vac_ov = 0;
-                    ln8000_enable_vac_ov(info, enable_vac_ov);
-                    ln_info("vac_ov=disable, vin=%dmV, i=%d, cnt=%d, delay=%d\n", info->vbus_uV / 1000, i, cnt, delay);
-                    adc_check_cnt = 0;
-                }
+                enable_vac_ov = 0;
+                ln8000_enable_vac_ov(info, enable_vac_ov);
+                ln_info("vac_ov=disable, vin=%dmV, i=%d, cnt=%d, delay=%d\n", info->vbus_uV/1000, i, cnt, delay);
             }
         } else {
             /* After disabled vac_ov, if ADC_VIN lower then 7V goto the terminate work */
             if (info->vbus_uV < 7000000) {
-                adc_check_cnt++;
-                ln_info("vin=%dmV, adc_check_cnt=%d\n", info->vbus_uV / 1000, adc_check_cnt);
-                if (adc_check_cnt > 2) {
-                    enable_vac_ov = 1;
-                    ln_info("vac_ov=enable, vin=%dmV, i=%d, cnt=%d, delay=%d\n", info->vbus_uV / 1000, i, cnt, delay);
-                    goto teminate_work;
-                }
+                enable_vac_ov = 1;
+                ln_info("vac_ov=enable, vin=%dmV, i=%d, cnt=%d, delay=%d\n", info->vbus_uV/1000, i, cnt, delay);
+                goto teminate_work;
             }
         }
         /* If judged 3 times by TA disconnected, goto the terminate work */
         if (sys_st == 0x1) { /* it's means entered shutdown mode */
-            ta_detach_cnt++;
-            ln_info("sys_st=0x%x, ta_detach_cnt=%d\n", sys_st, ta_detach_cnt);
-            if (ta_detach_cnt > 2)
+            ta_detached += 1;
+            ln_info("sys_st=0x%x, ta_detached=%d\n", sys_st, ta_detached);
+            if (ta_detached > 2) {
                 goto teminate_work;
+			}
         }
 
         msleep(delay);
     }
 
 teminate_work:
-    ln_info("terminate_work:enable_vac_ov (i=%d, cnt=%d)\n", i, cnt);
     ln8000_enable_vac_ov(info, 1);
     info->vac_ov_work_on = 0;
 }
