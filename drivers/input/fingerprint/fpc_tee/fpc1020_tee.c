@@ -46,7 +46,6 @@
 #include <linux/regulator/consumer.h>
 #include <linux/pm_wakeup.h>
 #include <linux/fb.h>
-#include <linux/pinctrl/qcom-pinctrl.h>
 #include <drm/drm_bridge.h>
 
 #define FPC_GPIO_NO_DEFAULT -1
