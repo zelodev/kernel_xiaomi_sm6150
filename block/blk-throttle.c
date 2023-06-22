@@ -14,15 +14,15 @@
 #include "blk.h"
 
 /* Max dispatch from a group in 1 round */
-static int throtl_grp_quantum = 8;
+static int throtl_grp_quantum = 16;
 
 /* Total max dispatch from all groups in one round */
-static int throtl_quantum = 32;
+static int throtl_quantum = 64;
 
 /* Throttling is performed over a slice and after that slice is renewed */
 #define DFL_THROTL_SLICE_HD (HZ / 10)
 #define DFL_THROTL_SLICE_SSD (HZ / 50)
-#define MAX_THROTL_SLICE (HZ)
+#define MAX_THROTL_SLICE (HZ / 100)
 #define MAX_IDLE_TIME (5L * 1000 * 1000) /* 5 s */
 #define MIN_THROTL_BPS (320 * 1024)
 #define MIN_THROTL_IOPS (10)
