@@ -27,7 +27,6 @@
 
 #define FPC_DRM_INTERFACE_WA
 
-#define CONFIG_FINGERPRINT_FP_VREG_CONTROL
 #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 
 #include <linux/atomic.h>
@@ -91,7 +90,7 @@ static struct vreg_config vreg_conf[] = {
 	/*{ "vdd_io", 1800000UL, 1800000UL, 6000, }, */
 };
 
-static int power_cfg = 0;
+static int power_cfg = 1;
 
 struct fpc1020_data {
 	struct device *dev;
