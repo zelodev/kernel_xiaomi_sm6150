@@ -24,15 +24,14 @@
 #include <ctype.h>
 #include <limits.h>
 
-#ifndef ARRAY_SIZE
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof(arr[0]))
-#endif
 
-#define KSYM_NAME_LEN		160
+#define KSYM_NAME_LEN		256
 
 struct sym_entry {
 	unsigned long long addr;
 	unsigned int len;
+	unsigned int seq;
 	unsigned int start_pos;
 	unsigned char *sym;
 	unsigned int percpu_absolute;
@@ -48,8 +47,6 @@ static unsigned long long relative_base;
 static struct addr_range text_ranges[] = {
 	{ "_stext",     "_etext"     },
 	{ "_sinittext", "_einittext" },
-	{ "_stext_l1",  "_etext_l1"  },	/* Blackfin on-chip L1 inst SRAM */
-	{ "_stext_l2",  "_etext_l2"  },	/* Blackfin on-chip L2 SRAM */
 };
 #define text_range_text     (&text_ranges[0])
 #define text_range_inittext (&text_ranges[1])
@@ -65,11 +62,11 @@ static int absolute_percpu = 0;
 static char symbol_prefix_char = '\0';
 static int base_relative = 0;
 
-int token_profit[0x10000];
+static int token_profit[0x10000];
 
 /* the table that holds the result of the compression */
-unsigned char best_table[256][2];
-unsigned char best_table_len[256];
+static unsigned char best_table[256][2];
+static unsigned char best_table_len[256];
 
 
 static void usage(void)
@@ -78,6 +75,11 @@ static void usage(void)
 			"[--symbol-prefix=<prefix char>] "
 			"[--base-relative] < in.map > out.S\n");
 	exit(1);
+}
+
+static char *sym_name(const struct sym_entry *s)
+{
+	return (char *)s->sym + 1;
 }
 
 static int check_symbol_range(const char *sym, unsigned long long addr,
@@ -169,7 +171,7 @@ static int read_symbol(FILE *in, struct sym_entry *s)
 			"unable to allocate required amount of memory\n");
 		exit(EXIT_FAILURE);
 	}
-	strcpy((char *)s->sym + 1, str);
+	strcpy(sym_name(s), sym);
 	s->sym[0] = stype;
 
 	s->percpu_absolute = 0;
@@ -231,7 +233,7 @@ static int symbol_valid(struct sym_entry *s)
 		NULL };
 
 	int i;
-	char *sym_name = (char *)s->sym + 1;
+	const char *name = sym_name(s);
 
 	/* skip prefix char */
 	if (symbol_prefix_char && *sym_name == symbol_prefix_char)
@@ -251,35 +253,56 @@ static int symbol_valid(struct sym_entry *s)
 		 * rules.
 		 */
 		if ((s->addr == text_range_text->end &&
-				strcmp(sym_name,
-				       text_range_text->end_sym)) ||
+				strcmp(name, text_range_text->end_sym)) ||
 		    (s->addr == text_range_inittext->end &&
-				strcmp(sym_name,
-				       text_range_inittext->end_sym)))
+				strcmp(name, text_range_inittext->end_sym)))
 			return 0;
 	}
 
 	/* Exclude symbols which vary between passes. */
 	for (i = 0; special_symbols[i]; i++)
-		if (strcmp(sym_name, special_symbols[i]) == 0)
+		if (strcmp(name, special_symbols[i]) == 0)
 			return 0;
 
 	for (i = 0; special_prefixes[i]; i++) {
 		int l = strlen(special_prefixes[i]);
 
-		if (l <= strlen(sym_name) &&
-		    strncmp(sym_name, special_prefixes[i], l) == 0)
+		if (strncmp(name, special_prefixes[i], l) == 0)
 			return 0;
 	}
 
 	for (i = 0; special_suffixes[i]; i++) {
-		int l = strlen(sym_name) - strlen(special_suffixes[i]);
+		int l = strlen(name) - strlen(special_suffixes[i]);
 
-		if (l >= 0 && strcmp(sym_name + l, special_suffixes[i]) == 0)
+		if (l >= 0 && strcmp(name + l, special_suffixes[i]) == 0)
 			return 0;
 	}
 
 	return 1;
+}
+
+/* remove all the invalid symbols from the table */
+static void shrink_table(void)
+{
+	unsigned int i, pos;
+
+	pos = 0;
+	for (i = 0; i < table_cnt; i++) {
+		if (symbol_valid(&table[i])) {
+			if (pos != i)
+				table[pos] = table[i];
+			pos++;
+		} else {
+			free(table[i].sym);
+		}
+	}
+	table_cnt = pos;
+
+	/* When valid symbol is not registered, exit to error */
+	if (!table_cnt) {
+		fprintf(stderr, "No valid symbol.\n");
+		exit(1);
+	}
 }
 
 static void read_map(FILE *in)
@@ -345,6 +368,35 @@ static int symbol_absolute(struct sym_entry *s)
 	return s->percpu_absolute;
 }
 
+static int compare_names(const void *a, const void *b)
+{
+	int ret;
+	char sa_namebuf[KSYM_NAME_LEN];
+	char sb_namebuf[KSYM_NAME_LEN];
+	const struct sym_entry *sa = *(const struct sym_entry **)a;
+	const struct sym_entry *sb = *(const struct sym_entry **)b;
+
+	expand_symbol(sa->sym, sa->len, sa_namebuf);
+	expand_symbol(sb->sym, sb->len, sb_namebuf);
+	ret = strcmp(&sa_namebuf[1], &sb_namebuf[1]);
+	if (!ret) {
+		if (sa->addr > sb->addr)
+			return 1;
+		else if (sa->addr < sb->addr)
+			return -1;
+
+		/* keep old order */
+		return (int)(sa->seq - sb->seq);
+	}
+
+	return ret;
+}
+
+static void sort_symbols_by_name(void)
+{
+	qsort(table, table_cnt, sizeof(table[0]), compare_names);
+}
+
 static void write_src(void)
 {
 	unsigned int i, k, off;
@@ -352,7 +404,7 @@ static void write_src(void)
 	unsigned int *markers;
 	char buf[KSYM_NAME_LEN];
 
-	printf("#include <asm/types.h>\n");
+	printf("#include <asm/bitsperlong.h>\n");
 	printf("#if BITS_PER_LONG == 64\n");
 	printf("#define PTR .quad\n");
 	printf("#define ALGN .balign 8\n");
@@ -441,6 +493,7 @@ static void write_src(void)
 	for (i = 0; i < table_cnt; i++) {
 		if ((i & 0xFF) == 0)
 			markers[i >> 8] = off;
+		table[i]->seq = i;
 
 		printf("\t.byte 0x%02x", table[i].len);
 		for (k = 0; k < table[i].len; k++)
@@ -457,6 +510,12 @@ static void write_src(void)
 	printf("\n");
 
 	free(markers);
+
+	sort_symbols_by_name();
+	output_label("kallsyms_seqs_of_names");
+	for (i = 0; i < table_cnt; i++)
+		printf("\t.long\t%u\n", table[i]->seq);
+	printf("\n");
 
 	output_label("kallsyms_token_table");
 	off = 0;
@@ -495,26 +554,17 @@ static void forget_symbol(unsigned char *symbol, int len)
 		token_profit[ symbol[i] + (symbol[i + 1] << 8) ]--;
 }
 
-/* remove all the invalid symbols from the table and do the initial token count */
+/* do the initial token count */
 static void build_initial_tok_table(void)
 {
-	unsigned int i, pos;
+	unsigned int i;
 
-	pos = 0;
-	for (i = 0; i < table_cnt; i++) {
-		if ( symbol_valid(&table[i]) ) {
-			if (pos != i)
-				table[pos] = table[i];
-			learn_symbol(table[pos].sym, table[pos].len);
-			pos++;
-		} else {
-			free(table[i].sym);
-		}
-	}
-	table_cnt = pos;
+	for (i = 0; i < table_cnt; i++)
+		learn_symbol(table[i].sym, table[i].len);
 }
 
-static void *find_token(unsigned char *str, int len, unsigned char *token)
+static unsigned char *find_token(unsigned char *str, int len,
+				 unsigned char *token)
 {
 	int i;
 
@@ -619,9 +669,6 @@ static void insert_real_symbols_in_table(void)
 {
 	unsigned int i, j, c;
 
-	memset(best_table, 0, sizeof(best_table));
-	memset(best_table_len, 0, sizeof(best_table_len));
-
 	for (i = 0; i < table_cnt; i++) {
 		for (j = 0; j < table[i].len; j++) {
 			c = table[i].sym[j];
@@ -637,19 +684,13 @@ static void optimize_token_table(void)
 
 	insert_real_symbols_in_table();
 
-	/* When valid symbol is not registered, exit to error */
-	if (!table_cnt) {
-		fprintf(stderr, "No valid symbol.\n");
-		exit(1);
-	}
-
 	optimize_result();
 }
 
 /* guess for "linker script provide" symbol */
 static int may_be_linker_script_provide_symbol(const struct sym_entry *se)
 {
-	const char *symbol = (char *)se->sym + 1;
+	const char *symbol = sym_name(se);
 	int len = se->len - 1;
 
 	if (len < 8)
@@ -681,16 +722,6 @@ static int may_be_linker_script_provide_symbol(const struct sym_entry *se)
 	return 0;
 }
 
-static int prefix_underscores_count(const char *str)
-{
-	const char *tail = str;
-
-	while (*tail == '_')
-		tail++;
-
-	return tail - str;
-}
-
 static int compare_symbols(const void *a, const void *b)
 {
 	const struct sym_entry *sa;
@@ -719,8 +750,8 @@ static int compare_symbols(const void *a, const void *b)
 		return wa - wb;
 
 	/* sort by the number of prefix underscores */
-	wa = prefix_underscores_count((const char *)sa->sym + 1);
-	wb = prefix_underscores_count((const char *)sb->sym + 1);
+	wa = strspn(sym_name(sa), "_");
+	wb = strspn(sym_name(sb), "_");
 	if (wa != wb)
 		return wa - wb;
 
@@ -754,11 +785,15 @@ static void record_relative_base(void)
 {
 	unsigned int i;
 
-	relative_base = -1ULL;
 	for (i = 0; i < table_cnt; i++)
-		if (!symbol_absolute(&table[i]) &&
-		    table[i].addr < relative_base)
+		if (!symbol_absolute(&table[i])) {
+			/*
+			 * The table is sorted by address.
+			 * Take the first non-absolute symbol value.
+			 */
 			relative_base = table[i].addr;
+			return;
+		}
 }
 
 int main(int argc, char **argv)
@@ -785,11 +820,12 @@ int main(int argc, char **argv)
 		usage();
 
 	read_map(stdin);
+	shrink_table();
 	if (absolute_percpu)
 		make_percpus_absolute();
+	sort_symbols();
 	if (base_relative)
 		record_relative_base();
-	sort_symbols();
 	optimize_token_table();
 	write_src();
 
