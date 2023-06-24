@@ -4201,6 +4201,8 @@ int module_kallsyms_on_each_symbol(int (*fn)(void *, const char *,
 				 mod, kallsyms->symtab[i].st_value);
 			if (ret != 0)
 				return ret;
+			
+			cond_resched();
 		}
 	}
 	return 0;
