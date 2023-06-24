@@ -58,10 +58,10 @@ static struct addr_range percpu_range = {
 
 static struct sym_entry *table;
 static unsigned int table_size, table_cnt;
-static int all_symbols = 0;
-static int absolute_percpu = 0;
+static int all_symbols;
+static int absolute_percpu;
 static char symbol_prefix_char = '\0';
-static int base_relative = 0;
+static int base_relative;
 
 static int token_profit[0x10000];
 
@@ -108,6 +108,8 @@ static bool is_ignored_symbol(const char *name, char type)
 	};
 
 	static const char * const ignored_prefixes[] = {
+		"$",			/* local symbols for ARM, MIPS, etc. */
+		".LASANPC",		/* s390 kasan local symbols */
 		"__crc_",		/* modversions */
 		"__efistub_",		/* arm64 EFI stub namespace */
 		NULL
@@ -138,10 +140,25 @@ static bool is_ignored_symbol(const char *name, char type)
 			return true;
 	}
 
+	if (type == 'U' || type == 'u')
+		return true;
+	/* exclude debugging symbols */
+	if (type == 'N' || type == 'n')
+		return true;
+
+	if (toupper(type) == 'A') {
+		/* Keep these useful absolute symbols */
+		if (strcmp(name, "__kernel_syscall_via_break") &&
+		    strcmp(name, "__kernel_syscall_via_epc") &&
+		    strcmp(name, "__kernel_sigtramp") &&
+		    strcmp(name, "__gp"))
+			return true;
+	}
+
 	return false;
 }
 
-static int check_symbol_range(const char *sym, unsigned long long addr,
+static void check_symbol_range(const char *sym, unsigned long long addr,
 			      struct addr_range *ranges, int entries)
 {
 	size_t i;
@@ -152,14 +169,12 @@ static int check_symbol_range(const char *sym, unsigned long long addr,
 
 		if (strcmp(sym, ar->start_sym) == 0) {
 			ar->start = addr;
-			return 0;
+			return;
 		} else if (strcmp(sym, ar->end_sym) == 0) {
 			ar->end = addr;
-			return 0;
+			return;
 		}
 	}
-
-	return 1;
 }
 
 static int read_symbol(FILE *in, struct sym_entry *s)
@@ -194,35 +209,9 @@ static int read_symbol(FILE *in, struct sym_entry *s)
 	/* Ignore most absolute/undefined (?) symbols. */
 	if (strcmp(sym, "_text") == 0)
 		_text = s->addr;
-	else if (check_symbol_range(sym, s->addr, text_ranges,
-				    ARRAY_SIZE(text_ranges)) == 0)
-		/* nothing to do */;
-	else if (toupper(stype) == 'A')
-	{
-		/* Keep these useful absolute symbols */
-		if (strcmp(sym, "__kernel_syscall_via_break") &&
-		    strcmp(sym, "__kernel_syscall_via_epc") &&
-		    strcmp(sym, "__kernel_sigtramp") &&
-		    strcmp(sym, "__gp")){
-			return -1;
-                    }
 
-	}
-	else if (toupper(stype) == 'U')
-		return -1;
-	/*
-	 * Ignore generated symbols such as:
-	 *  - mapping symbols in ARM ELF files ($a, $t, and $d)
-	 *  - MIPS ELF local symbols ($L123 instead of .L123)
-	 */
-	else if (str[0] == '$')
-		return -1;
-	/* exclude debugging symbols */
-	else if (toupper(stype) == 'N')
-		return -1;
-	/* exclude s390 kasan local symbols */
-	else if (!strncmp(sym, ".LASANPC", 8))
-		return -1;
+	check_symbol_range(sym, s->addr, text_ranges, ARRAY_SIZE(text_ranges));
+	check_symbol_range(sym, s->addr, &percpu_range, 1);
 
 	/* include the type field in the symbol name, so that it gets
 	 * compressed together */
@@ -238,8 +227,6 @@ static int read_symbol(FILE *in, struct sym_entry *s)
 
 	s->percpu_absolute = 0;
 
-	/* Record if we've found __per_cpu_start/end. */
-	check_symbol_range(sym, s->addr, &percpu_range, 1);
 	if (toupper(stype) == 'W' && strstr(sym, ".c") != NULL)
 		return -1;
 	return 0;
@@ -347,6 +334,15 @@ static void output_label(const char *label)
 		printf("%s:\n", label);
 }
 
+/* Provide proper symbols relocatability by their '_text' relativeness. */
+static void output_address(unsigned long long addr)
+{
+	if (_text <= addr)
+		printf("\tPTR\t_text + %#llx\n", addr - _text);
+	else
+		printf("\tPTR\t_text - %#llx\n", _text - addr);
+}
+
 /* uncompress a compressed symbol. When this function is called, the best table
  * might still be compressed itself, so the function needs to be recursive */
 static int expand_symbol(const unsigned char *data, int len, char *result)
@@ -426,19 +422,6 @@ static void write_src(void)
 
 	printf("\t.section .rodata, \"a\"\n");
 
-	/* Provide proper symbols relocatability by their relativeness
-	 * to a fixed anchor point in the runtime image, either '_text'
-	 * for absolute address tables, in which case the linker will
-	 * emit the final addresses at build time. Otherwise, use the
-	 * offset relative to the lowest value encountered of all relative
-	 * symbols, and emit non-relocatable fixed offsets that will be fixed
-	 * up at runtime.
-	 *
-	 * The symbol names cannot be used to construct normal symbol
-	 * references as the list of symbols contains symbols that are
-	 * declared static and are private to their .o files.  This prevents
-	 * .tmp_kallsyms.o or any other object from referencing them.
-	 */
 	if (!base_relative)
 		output_label("kallsyms_addresses");
 	else
@@ -446,6 +429,14 @@ static void write_src(void)
 
 	for (i = 0; i < table_cnt; i++) {
 		if (base_relative) {
+
+			/*
+			 * Use the offset relative to the lowest value
+			 * encountered of all relative symbols, and emit
+			 * non-relocatable fixed offsets that will be fixed
+			 * up at runtime.
+			 */
+
 			long long offset;
 			int overflow;
 
@@ -468,12 +459,7 @@ static void write_src(void)
 			}
 			printf("\t.long\t%#x\n", (int)offset);
 		} else if (!symbol_absolute(&table[i])) {
-			if (_text <= table[i].addr)
-				printf("\tPTR\t_text + %#llx\n",
-					table[i].addr - _text);
-			else
-				printf("\tPTR\t_text - %#llx\n",
-					_text - table[i].addr);
+			output_address(table[i].addr);
 		} else {
 			printf("\tPTR\t%#llx\n", table[i].addr);
 		}
@@ -482,7 +468,7 @@ static void write_src(void)
 
 	if (base_relative) {
 		output_label("kallsyms_relative_base");
-		printf("\tPTR\t_text - %#llx\n", _text - relative_base);
+		output_address(relative_base);
 		printf("\n");
 	}
 
