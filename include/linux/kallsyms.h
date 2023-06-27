@@ -25,6 +25,9 @@ int kallsyms_on_each_symbol(int (*fn)(void *, const char *, struct module *,
 				      unsigned long),
 			    void *data);
 
+int kallsyms_on_each_match_symbol(int (*fn)(void *, unsigned long),
+				  const char *name, void *data);
+
 extern int kallsyms_lookup_size_offset(unsigned long addr,
 				  unsigned long *symbolsize,
 				  unsigned long *offset);
@@ -106,6 +109,12 @@ static inline int lookup_symbol_attrs(unsigned long addr, unsigned long *size, u
 
 static inline int kallsyms_on_each_symbol(int (*fn)(void *, const char *, struct module *,
 					  unsigned long), void *data)
+{
+	return -EOPNOTSUPP;
+}
+
+static inline int kallsyms_on_each_match_symbol(int (*fn)(void *, unsigned long),
+						const char *name, void *data)
 {
 	return -EOPNOTSUPP;
 }
