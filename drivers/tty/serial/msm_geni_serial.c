@@ -117,7 +117,7 @@
 #define UART_CORE2X_VOTE	(5000)
 #define UART_CONSOLE_CORE2X_VOTE (960)
 
-#define WAKEBYTE_TIMEOUT_MSEC	(2000)
+#define WAKEBYTE_TIMEOUT_MSEC	(100)
 #define WAIT_XFER_MAX_ITER	(2)
 #define WAIT_XFER_MAX_TIMEOUT_US	(10000)
 #define WAIT_XFER_MIN_TIMEOUT_US	(9000)
@@ -3644,8 +3644,8 @@ static int msm_geni_serial_sys_hib_resume_noirq(struct device *dev)
 static const struct dev_pm_ops msm_geni_serial_pm_ops = {
 	.runtime_suspend = msm_geni_serial_runtime_suspend,
 	.runtime_resume = msm_geni_serial_runtime_resume,
-	.suspend_noirq = msm_geni_serial_sys_suspend,
-	.resume_noirq = msm_geni_serial_sys_resume,
+	.suspend = msm_geni_serial_sys_suspend,
+	.resume = msm_geni_serial_sys_resume,
 	.freeze = msm_geni_serial_sys_suspend,
 	.restore = msm_geni_serial_sys_hib_resume_noirq,
 	.thaw = msm_geni_serial_sys_hib_resume_noirq,
