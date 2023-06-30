@@ -5492,7 +5492,7 @@ static int qpnp_qg_resume(struct device *dev)
 	queue_delayed_work(system_power_efficient_wq, &chip->soc_monitor_work,
 		msecs_to_jiffies(MONITOR_SOC_WAIT_MS));
 
-	chip->force_shutdown == false;
+	chip->force_shutdown = false;
 	schedule_delayed_work(&chip->force_shutdown_work, msecs_to_jiffies(URGENT_DELAY_MS));
 	return 0;
 }
@@ -5727,7 +5727,7 @@ static int qpnp_qg_probe(struct platform_device *pdev)
 	queue_delayed_work(system_power_efficient_wq, &chip->soc_monitor_work,
 		msecs_to_jiffies(MONITOR_SOC_WAIT_MS));
 
-	chip->force_shutdown == false;
+	chip->force_shutdown = false;
 	schedule_delayed_work(&chip->force_shutdown_work, msecs_to_jiffies(URGENT_DELAY_MS));
 
 	qg_get_battery_capacity(chip, &soc);
