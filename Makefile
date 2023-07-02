@@ -449,7 +449,7 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -Werror-implicit-function-declaration \
 		   -Wno-format-security \
 		   -std=gnu89
-		   -mcpu=cortex-a55+crypto+crc -fdiagnostics-color=always -pipe \
+		   -mcpu=cortex-a55+crypto+crc -mtune=cortex-a55 -fdiagnostics-color=always -pipe \
 		   -Wno-void-pointer-to-enum-cast -Wno-misleading-indentation -Wno-unused-function -Wno-bool-operation \
 		   -Wno-unsequenced -Wno-void-pointer-to-int-cast -Wno-unused-variable -Wno-pointer-to-int-cast -Wno-pointer-to-enum-cast
 
@@ -707,7 +707,15 @@ endif
 # of objdump for processing symbol versions and exports
 LLVM_AR		:= llvm-ar
 LLVM_NM		:= llvm-nm
+
+# Set O3 optimization level for LTO
+LDFLAGS		+= --plugin-opt=O3
+
 export LLVM_AR LLVM_NM
+
+# Set O3 optimization level for LTO
+LDFLAGS		+= --plugin-opt=O3
+
 endif
 
 # The arch Makefile can set ARCH_{CPP,A,C}FLAGS to override the default
@@ -718,7 +726,7 @@ ARCH_CFLAGS :=
 include arch/$(SRCARCH)/Makefile
 
 GC_FLAGS += -O3 -mcpu=cortex-a76.cortex-a55+crypto+crc
-CL_FLAGS += -O3 -mcpu=cortex-a55+crypto+crc
+CL_FLAGS += -O3 -mcpu=cortex-a55+crypto+crc -mtune=cortex-a55
 
 export GC_FLAGS
 export CL_FLAGS
@@ -839,7 +847,7 @@ KBUILD_CFLAGS += $(call cc-option,-fno-delete-null-pointer-checks,)
 KBUILD_CFLAGS += $(call cc-disable-warning, unused-but-set-variable)
 
 ifeq ($(ld-name),lld)
-LDFLAGS += -O3 --strip-debug
+LDFLAGS += --lto-O3 --strip-debug
 endif
 
 KBUILD_CFLAGS += $(call cc-disable-warning, unused-const-variable)
@@ -938,12 +946,6 @@ else
 lto-clang-flags	:= -flto
 endif
 lto-clang-flags += -fvisibility=default $(call cc-option, -fsplit-lto-unit)
-
-# Limit inlining across translation units to reduce binary size
-LD_FLAGS_LTO_CLANG := -mllvm -import-instr-limit=5
-
-KBUILD_LDFLAGS += $(LD_FLAGS_LTO_CLANG)
-KBUILD_LDFLAGS_MODULE += $(LD_FLAGS_LTO_CLANG)
 
 KBUILD_LDFLAGS_MODULE += -T scripts/module-lto.lds
 
@@ -1154,6 +1156,7 @@ INITRD_COMPRESS-$(CONFIG_RD_LZMA)  := lzma
 INITRD_COMPRESS-$(CONFIG_RD_XZ)    := xz
 INITRD_COMPRESS-$(CONFIG_RD_LZO)   := lzo
 INITRD_COMPRESS-$(CONFIG_RD_LZ4)   := lz4
+INITRD_COMPRESS-$(CONFIG_RD_ZSTD)  := zstd
 # do not export INITRD_COMPRESS, since we didn't actually
 # choose a sane default compression above.
 # export INITRD_COMPRESS := $(INITRD_COMPRESS-y)
