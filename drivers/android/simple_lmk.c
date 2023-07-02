@@ -272,20 +272,25 @@ static void scan_and_kill(void)
 		/* Accelerate the victim's death by forcing the kill signal */
 		do_send_sig_info(SIGKILL, SEND_SIG_FORCED, vtsk, true);
 
-		/* Mark the thread group dead so that other kernel code knows */
+		/*
+		 * Mark the thread group dead so that other kernel code knows,
+		 * and then elevate the thread group to SCHED_RR with minimum RT
+		 * priority. The entire group needs to be elevated because
+		 * there's no telling which threads have references to the mm as
+		 * well as which thread will happen to put the final reference
+		 * and release the mm's memory. If the mm is released from a
+		 * thread with low scheduling priority then it may take a very
+		 * long time for exit_mmap() to complete.
+		 */
 		rcu_read_lock();
 		for_each_thread(vtsk, t)
 			set_tsk_thread_flag(t, TIF_MEMDIE);
+		for_each_thread(vtsk, t)
+			set_task_rt_prio(t, 1);
 		rcu_read_unlock();
-
-		/* Elevate the victim to SCHED_RR with the highest RT priority */
-		sched_setscheduler_nocheck(vtsk, SCHED_RR, &sched_max_prio);
 
 		/* Allow the victim to run on any CPU. This won't schedule. */
 		set_cpus_allowed_ptr(vtsk, cpu_all_mask);
-
-		/* Signals can't wake frozen tasks; only a thaw operation can */
-		__thaw_task(vtsk);
 
 		/* Signals can't wake frozen tasks; only a thaw operation can */
 		__thaw_task(vtsk);
