@@ -60,6 +60,11 @@ enum dsi_backlight_type {
 	DSI_BACKLIGHT_MAX,
 };
 
+enum dsi_doze_mode_type {
+	DSI_DOZE_LPM = 0,
+	DSI_DOZE_HBM,
+};
+
 enum bl_update_flag {
 	BL_UPDATE_DELAY_UNTIL_FIRST_FRAME,
 	BL_UPDATE_NONE,
@@ -128,6 +133,8 @@ struct dsi_backlight_config {
 	u32 bl_level;
 	u32 bl_scale;
 	u32 bl_scale_ad;
+	u32 bl_doze_lpm;
+	u32 bl_doze_hbm;
 	bool bl_inverted_dbv;
 	bool dcs_type_ss_ea;
 	bool dcs_type_ss_eb;
@@ -249,6 +256,9 @@ struct dsi_panel {
 	bool sync_broadcast_en;
 	int power_mode;
 	enum dsi_panel_physical_type panel_type;
+
+	bool doze_enabled;
+	enum dsi_doze_mode_type doze_mode;
 
 	u32 panel_on_dimming_delay;
 	struct delayed_work cmds_work;
@@ -424,6 +434,10 @@ struct dsi_panel *dsi_panel_ext_bridge_get(struct device *parent,
 int dsi_panel_parse_esd_reg_read_configs(struct dsi_panel *panel);
 
 void dsi_panel_ext_bridge_put(struct dsi_panel *panel);
+
+int dsi_panel_set_doze_status(struct dsi_panel *panel, bool status);
+
+int dsi_panel_set_doze_mode(struct dsi_panel *panel, enum dsi_doze_mode_type mode);
 
 int dsi_panel_get_cmd_pkt_count(const char *data, u32 length, u32 *cnt);
 int dsi_panel_alloc_cmd_packets(struct dsi_panel_cmd_set *cmd,
