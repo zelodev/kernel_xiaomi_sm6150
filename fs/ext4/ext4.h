@@ -1181,8 +1181,6 @@ struct ext4_inode_info {
 						specified journal checksum */
 #define EXT4_MOUNT2_NO_SEHASH_XATTR	0x00000010 /* Ignore security.sehash extended attribute */
 
-#define EXT4_MOUNT2_NO_SEHASH_XATTR	0x00000010 /* Ignore security.sehash extended attribute */
-
 #define clear_opt(sb, opt)		EXT4_SB(sb)->s_mount_opt &= \
 						~EXT4_MOUNT_##opt
 #define set_opt(sb, opt)		EXT4_SB(sb)->s_mount_opt |= \
