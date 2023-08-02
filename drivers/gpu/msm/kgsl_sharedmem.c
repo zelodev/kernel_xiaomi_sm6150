@@ -96,6 +96,20 @@ struct mem_entry_stats {
 		mem_entry_max_show), \
 }
 
+struct deferred_work {
+	struct kgsl_process_private *private;
+	struct work_struct work;
+};
+
+static void process_private_deferred_put(struct work_struct *work)
+{
+	struct deferred_work *free_work =
+		container_of(work, struct deferred_work, work);
+
+	kgsl_process_private_put(free_work->private);
+	kfree(free_work);
+}
+
 static void kgsl_cma_unlock_secure(struct kgsl_memdesc *memdesc);
 
 static ssize_t
@@ -105,6 +119,27 @@ imported_mem_show(struct kgsl_process_private *priv,
 	struct kgsl_mem_entry *entry;
 	uint64_t imported_mem = 0;
 	int id = 0;
+
+	struct deferred_work *work = kzalloc(sizeof(struct deferred_work),
+		GFP_KERNEL);
+
+	if (!work)
+		return -ENOMEM;
+
+	/*
+	 * Take a process refcount here and put it back in a deferred manner.
+	 * This is to avoid a deadlock where we put back last reference of the
+	 * process private (via kgsl_mem_entry_put) here and end up trying to
+	 * remove sysfs kobject while we are still in the middle of reading one
+	 * of the sysfs files.
+	 */
+	if (!kgsl_process_private_get(priv)) {
+		kfree(work);
+		return -ENOENT;
+	}
+
+	work->private = priv;
+	INIT_WORK(&work->work, process_private_deferred_put);
 
 	spin_lock(&priv->mem_lock);
 	for (entry = idr_get_next(&priv->mem_idr, &id); entry;
@@ -138,6 +173,8 @@ imported_mem_show(struct kgsl_process_private *priv,
 		spin_lock(&priv->mem_lock);
 	}
 	spin_unlock(&priv->mem_lock);
+
+	queue_work(kgsl_driver.mem_workqueue, &work->work);
 
 	return scnprintf(buf, PAGE_SIZE, "%llu\n", imported_mem);
 }
