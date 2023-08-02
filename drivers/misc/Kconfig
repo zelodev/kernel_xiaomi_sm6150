@@ -634,7 +634,7 @@ config LDO_WL2866D
 
 config FORCE_FAST_CHARGE
 	bool "Force faster charge rate for USB"
-	default n
+	default y
 	help
 	  This allows users to override default charge rate for USB
 
