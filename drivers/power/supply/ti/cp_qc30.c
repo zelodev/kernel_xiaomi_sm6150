@@ -458,8 +458,9 @@ static int cp_set_qc_bus_protections(int hvdcp3_type)
 		return -ENODEV;
 
 	val.intval = hvdcp3_type;
-	ret = power_supply_set_property(psy,
-			POWER_SUPPLY_PROP_TI_SET_BUS_PROTECTION_FOR_QC3, &val);
+	
+	//test?
+	ret = HVDCP3P5_CLASSB_27W;
 
 	return ret;
 }
@@ -1189,6 +1190,8 @@ void cp_statemachine(unsigned int port)
 
 static void cp_workfunc(struct work_struct *work)
 {
+	struct power_supply *onsemi_psy;
+	
 	cp_get_usb_type();
 
 	cp_update_sw_status();
@@ -1201,9 +1204,9 @@ static void cp_workfunc(struct work_struct *work)
 	/* check whether usb is present */
 	if (pm_state.usb_present == 0) {
 		cp_set_qc_bus_protections(HVDCP3_NONE);
-#ifdef CONFIG_CHARGER_LN8000
-		pm_state.state = CP_STATE_DISCONNECT;
-#endif
+		onsemi_psy = power_supply_get_by_name("ln8000_charger");
+		if (onsemi_psy)
+			pm_state.state = CP_STATE_DISCONNECT;
 		return;
 	}
 
