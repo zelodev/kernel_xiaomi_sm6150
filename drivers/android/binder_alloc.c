@@ -42,7 +42,7 @@ static uint32_t binder_alloc_debug_mask = BINDER_DEBUG_USER_ERROR;
 
 module_param_named(debug_mask, binder_alloc_debug_mask,
 		   uint, 0644);
-
+#endif
 #ifdef CONFIG_DEBUG_KERNEL
 #define binder_alloc_debug(mask, x...) \
 	do { \
