@@ -804,16 +804,16 @@ static int psy_chg_get_ti_alarm_status(struct ln8000_info *info)
              (info->tdie_alarm << DIE_THERM_ALARM_SHIFT));
 
     v_offset = info->vbus_uV - (info->vbat_uV * 2);
-    /* after charging-enabled, When the input current rises above rcp_th(over 200mA), it activates rcp. */
+    /* after charging-enabled, When the input current rises above rcp_th(over 400mA), it activates rcp. */
     if (info->chg_en && !(info->rcp_en)) {
-        if (info->iin_uA > 200000 && v_offset > 300000) {
+        if (info->iin_uA > 400000) {
             ln8000_enable_rcp(info, 1);
             ln_info("enabled rcp\n");
         }
     }
-    /* If an unplug event occurs when vbus voltage lower then vin_start_up_th, switch to standby mode. */
+    /* If an unplug event occurs when vbus voltage lower then iin(70mA) and v_offset(100mV), switch to standby mode. */
     if (info->chg_en && !(info->rcp_en)) {
-        if (v_offset < 100000) {
+        if (info->iin_uA < 70000 && v_offset < 100000) {
             ln8000_change_opmode(info, LN8000_OPMODE_STANDBY);
             ln_info("forced change standby_mode for prevent reverse current\n");
 		info->chg_en = 0;
@@ -958,6 +958,10 @@ static int ln8000_charger_get_property(struct power_supply *psy,
 static int psy_chg_set_charging_enable(struct ln8000_info *info, int val)
 {
     int op_mode;
+
+    /* skip duplicate command of charging enable */
+    if (val == info->chg_en)
+        return 0;
 
     if (val) {
         ln_info("start charging\n");

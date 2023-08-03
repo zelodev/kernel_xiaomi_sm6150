@@ -184,6 +184,9 @@ static struct power_supply *cp_get_fc_psy(void)
 			pm_state.fc_psy = power_supply_get_by_name("bq2597x-standalone");
 	}
 
+	if (!pm_state.fc_psy)
+		pm_state.fc_psy = power_supply_get_by_name("ln8000");
+
 	return pm_state.fc_psy;
 }
 
@@ -1204,7 +1207,7 @@ static void cp_workfunc(struct work_struct *work)
 	/* check whether usb is present */
 	if (pm_state.usb_present == 0) {
 		cp_set_qc_bus_protections(HVDCP3_NONE);
-		onsemi_psy = power_supply_get_by_name("ln8000_charger");
+		onsemi_psy = power_supply_get_by_name("ln8000");
 		if (onsemi_psy)
 			pm_state.state = CP_STATE_DISCONNECT;
 		return;
