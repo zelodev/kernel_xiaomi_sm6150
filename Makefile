@@ -767,6 +767,10 @@ KBUILD_CFLAGS	+= -mllvm -polly \
 endif
 endif
 
+KBUILD_CFLAGS	+= -mllvm -inline-threshold=2000
+KBUILD_CFLAGS	+= -mllvm -inlinehint-threshold=3000
+KBUILD_CFLAGS   += -mllvm -unroll-threshold=1200
+
 # Tell compiler to use pipes instead of temporary files during compilation
 KBUILD_CFLAGS += $(call cc-option, -pipe)
 
