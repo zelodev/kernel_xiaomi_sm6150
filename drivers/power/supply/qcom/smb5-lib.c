@@ -27,6 +27,7 @@
 #include <linux/gpio.h>
 #include "smb5-lib.h"
 #include "smb5-reg.h"
+#include "schgm-flash.h"
 #include "step-chg-jeita.h"
 #include "storm-watch.h"
 #include "schgm-flash.h"
@@ -899,35 +900,6 @@ int smblib_get_fastcharge_mode(struct smb_charger *chg)
 	return pval.intval;
 }
 
-static int set_ln8000_fv(struct smb_charger *chg) {
-	int rc;
-	union power_supply_propval val;
-
-	if (!chg->cp_psy) {
-		chg->cp_psy = power_supply_get_by_name("bq2597x-standalone");
-
-		if (!chg->cp_psy)
-			chg->cp_psy = power_supply_get_by_name("ln8000");
-
-		if (!chg->cp_psy) {
-			pr_err("cp_psy not found\n");
-			return 0;
-		}
-	}
-
-	rc = power_supply_get_property(chg->cp_psy,
-				POWER_SUPPLY_PROP_MODEL_NAME, &val);
-	if (rc < 0) {
-		pr_err("Error in getting charge IC name, rc=%d\n", rc);
-		return 0;
-	}
-
-	if (strcmp(val.strval, "ln8000") == 0) {
-		vote(chg->fv_votable, BATT_LN8000_VOTER, true, 4470000);
-	}
-	return 0;
-}
-
 static bool is_bq25970_available(struct smb_charger *chg)
 {
 	struct power_supply *psy = power_supply_get_by_name("bq2597x-standalone");
@@ -1009,7 +981,6 @@ int smblib_set_fastcharge_mode(struct smb_charger *chg, bool enable)
 	if (enable) {
 		/* ffc need clear 4.4V non_fcc_vfloat_voter first */
 		vote(chg->fv_votable, NON_FFC_VFLOAT_VOTER, false, 0);
-		set_ln8000_fv(chg);
 		rc = power_supply_get_property(chg->bms_psy,
 				POWER_SUPPLY_PROP_FFC_CHG_TERMINATION_CURRENT, &pval);
 		if (rc < 0) {
@@ -1132,7 +1103,7 @@ static int smblib_set_usb_pd_allowed_voltage(struct smb_charger *chg,
 	} else if (min_allowed_uv == MICRO_9V && max_allowed_uv == MICRO_9V) {
 		vbus_allowance = FORCE_9V;
 	} else if (min_allowed_uv == MICRO_12V && max_allowed_uv == MICRO_12V) {
-		vbus_allowance = FORCE_9V;
+		vbus_allowance = FORCE_12V;
 	} else if (min_allowed_uv < MICRO_12V && max_allowed_uv <= MICRO_12V) {
 		vbus_allowance = CONTINUOUS;
 	} else {
@@ -1468,7 +1439,7 @@ static const struct apsd_result *smblib_update_usb_type(struct smb_charger *chg)
 
 	/* if PD is active, APSD is disabled so won't have a valid result */
 	if (chg->pd_active) {
-		chg->real_charger_type = POWER_SUPPLY_TYPE_USB_HVDCP_3;
+		chg->real_charger_type = POWER_SUPPLY_TYPE_USB_PD;
 	} else if (chg->qc3p5_detected) {
 		chg->real_charger_type = POWER_SUPPLY_TYPE_USB_HVDCP_3P5;
 	} else {
@@ -3683,12 +3654,12 @@ int smblib_dp_dm(struct smb_charger *chg, int val)
 	case POWER_SUPPLY_DP_DM_FORCE_12V:
 		/* we use our own qc2 method to raise to 9V, so just return here */
 		return 0;
-		if (chg->qc2_unsupported_voltage == QC2_NON_COMPLIANT_9V) {
-			smblib_err(chg, "Couldn't set 9V: unsupported\n");
+		if (chg->qc2_unsupported_voltage == QC2_NON_COMPLIANT_12V) {
+			smblib_err(chg, "Couldn't set 12V: unsupported\n");
 			return -EINVAL;
 		}
 
-		/* If we are increasing voltage to get to 9V, set FSW first */
+		/* If we are increasing voltage to get to 12V, set FSW first */
 		rc = smblib_read(chg, QC_CHANGE_STATUS_REG, &stat);
 		if (rc < 0) {
 			smblib_err(chg, "Couldn't read QC_CHANGE_STATUS_REG rc=%d\n",
@@ -3700,12 +3671,12 @@ int smblib_dp_dm(struct smb_charger *chg, int val)
 			/* Force 1A ICL before requesting higher voltage */
 			vote(chg->usb_icl_votable, HVDCP2_ICL_VOTER,
 					true, 1000000);
-			smblib_hvdcp_set_fsw(chg, QC_9V_BIT);
+			smblib_hvdcp_set_fsw(chg, QC_12V_BIT);
 		}
 
-		rc = smblib_force_vbus_voltage(chg, FORCE_9V_BIT);
+		rc = smblib_force_vbus_voltage(chg, FORCE_12V_BIT);
 		if (rc < 0)
-			pr_err("Failed to force 9V\n");
+			pr_err("Failed to force 12V\n");
 
 		vote(chg->usb_icl_votable, SW_ICL_MAX_VOTER, true,
 				HVDCP2_CURRENT_UA);
@@ -4338,7 +4309,7 @@ int smblib_get_prop_dc_current_max(struct smb_charger *chg,
 int smblib_get_prop_dc_voltage_max(struct smb_charger *chg,
 				    union power_supply_propval *val)
 {
-	val->intval = MICRO_9V;
+	val->intval = MICRO_12V;
 	return 0;
 }
 
@@ -4558,7 +4529,7 @@ int smblib_get_prop_usb_voltage_max_design(struct smb_charger *chg,
 		if (chg->chg_param.smb_version == PMI632_SUBTYPE)
 			val->intval = MICRO_9V;
 		else
-			val->intval = MICRO_9V;
+			val->intval = MICRO_12V;
 		break;
 	default:
 		val->intval = MICRO_5V;
@@ -4587,7 +4558,7 @@ int smblib_get_prop_usb_voltage_max(struct smb_charger *chg,
 		if (chg->chg_param.smb_version == PMI632_SUBTYPE)
 			val->intval = MICRO_9V;
 		else
-			val->intval = MICRO_9V;
+			val->intval = MICRO_12V;
 		break;
 	case POWER_SUPPLY_TYPE_USB_PD:
 		val->intval = chg->voltage_max_uv;
@@ -4609,7 +4580,7 @@ static int smblib_estimate_adaptor_voltage(struct smb_charger *chg,
 
 	switch (chg->real_charger_type) {
 	case POWER_SUPPLY_TYPE_USB_HVDCP:
-		val->intval = MICRO_9V;
+		val->intval = MICRO_12V;
 		break;
 	case POWER_SUPPLY_TYPE_USB_HVDCP_3P5:
 		step_uv = HVDCP3P5_STEP_UV;
@@ -7275,9 +7246,9 @@ struct quick_charge adapter_cap[11] = {
 	{ POWER_SUPPLY_TYPE_USB_CDP,    QUICK_CHARGE_NORMAL },
 	{ POWER_SUPPLY_TYPE_USB_ACA,    QUICK_CHARGE_NORMAL },
 	{ POWER_SUPPLY_TYPE_USB_FLOAT,  QUICK_CHARGE_NORMAL },
-	{ POWER_SUPPLY_TYPE_USB_PD,       QUICK_CHARGE_FLASH },
-	{ POWER_SUPPLY_TYPE_USB_HVDCP,    QUICK_CHARGE_FLASH },
-	{ POWER_SUPPLY_TYPE_USB_HVDCP_3,  QUICK_CHARGE_FLASH },
+	{ POWER_SUPPLY_TYPE_USB_PD,       QUICK_CHARGE_FAST },
+	{ POWER_SUPPLY_TYPE_USB_HVDCP,    QUICK_CHARGE_FAST },
+	{ POWER_SUPPLY_TYPE_USB_HVDCP_3,  QUICK_CHARGE_FAST },
 	{ POWER_SUPPLY_TYPE_USB_HVDCP_3P5,  QUICK_CHARGE_FLASH },
 	{ POWER_SUPPLY_TYPE_WIRELESS,     QUICK_CHARGE_FAST },
 	{0, 0},
@@ -7307,14 +7278,14 @@ int smblib_get_quick_charge_type(struct smb_charger *chg)
 	/* davinic do not need to report this type */
 	if ((chg->real_charger_type == POWER_SUPPLY_TYPE_USB_PD)
 				&& chg->pd_verifed && chg->qc_class_ab) {
-		return QUICK_CHARGE_FLASH;
+		return QUICK_CHARGE_TURBE;
 	}
 
 	if (chg->is_qc_class_b || chg->real_charger_type == POWER_SUPPLY_TYPE_USB_HVDCP_3P5)
 		return QUICK_CHARGE_FLASH;
 
 	if ((chg->real_charger_type == POWER_SUPPLY_TYPE_USB_DCP) && chg->hvdcp_recheck_status)
-		return QUICK_CHARGE_FLASH;
+		return QUICK_CHARGE_FAST;
 
 	while (adapter_cap[i].adap_type != 0) {
 		if (chg->real_charger_type == adapter_cap[i].adap_type) {
@@ -7527,17 +7498,18 @@ static void update_sw_icl_max(struct smb_charger *chg, int pst)
 			gpio_get_value(chg->dc_9v_gpio))
 			vote(chg->usb_icl_votable, GPIO_DCIN_VOTER,
 				true, DCP_CURRENT_UA);
-		else if (!chg->recheck_charger)
+		else
 			/*
 			 * limit ICL to 100mA, the USB driver will
 			 * enumerate to check if this is a SDP and
 			 * appropriately set the current.
 			 */
-			vote(chg->usb_icl_votable, SW_ICL_MAX_VOTER,
-					true, SDP_100_MA);
-		else
-			vote(chg->usb_icl_votable, SW_ICL_MAX_VOTER, true,
-						FLOAT_CHARGER_UA);
+			if (!chg->recheck_charger)
+				vote(chg->usb_icl_votable, SW_ICL_MAX_VOTER, true,
+							SDP_100_MA);
+			else
+				vote(chg->usb_icl_votable, SW_ICL_MAX_VOTER, true,
+							FLOAT_CHARGER_UA);
 		break;
 	case POWER_SUPPLY_TYPE_UNKNOWN:
 	default:

@@ -116,7 +116,6 @@ enum print_reason {
 /* use for QC3P5 */
 #define QC3P5_VOTER			"QC3P5_VOTER"
 #define FCC_MAX_QC3P5_VOTER		"FCC_MAX_QC3P5_VOTER"
-#define BATT_LN8000_VOTER 		"BATT_LN8000_VOTER"
 
 #define BOOST_BACK_STORM_COUNT	3
 #define WEAK_CHG_STORM_COUNT	8
@@ -179,14 +178,14 @@ enum print_reason {
 #define SDP_CURRENT_UA			500000
 #define CDP_CURRENT_UA			1500000
 #define DCP_CURRENT_UA			2000000
-#define HVDCP_CURRENT_UA		4000000
-#define HVDCP_CLASS_B_CURRENT_UA		4000000
+#define HVDCP_CURRENT_UA		3000000
+#define HVDCP_CLASS_B_CURRENT_UA		3100000
 #define HVDCP2_CURRENT_UA		1500000
 #define HVDCP_START_CURRENT_UA		500000
 #define HVDCP_START_CURRENT_UA_FOR_BQ	500000
 #define TYPEC_DEFAULT_CURRENT_UA	900000
 #define TYPEC_MEDIUM_CURRENT_UA		1500000
-#define TYPEC_HIGH_CURRENT_UA		4000000
+#define TYPEC_HIGH_CURRENT_UA		3000000
 #define HVDCP3p5_40W_CURRENT_UA		4000000
 #define DCIN_ICL_MIN_UA			100000
 #define DCIN_ICL_MAX_UA			1500000
@@ -633,12 +632,12 @@ struct smb_charger {
 	struct delayed_work	role_reversal_check;
 	struct delayed_work	pr_swap_detach_work;
 	struct delayed_work	pr_lock_clear_work;
+	struct delayed_work	micro_usb_switch_work;
 	struct delayed_work	reg_work;
 	struct delayed_work	six_pin_batt_step_chg_work;
 	struct delayed_work	reduce_fcc_work;
-	struct delayed_work     status_report_work;
+	struct delayed_work	status_report_work;
 	struct delayed_work	thermal_setting_work;
-	struct delayed_work	micro_usb_switch_work;
 
 	struct alarm		lpd_recheck_timer;
 	struct alarm		moisture_protection_alarm;

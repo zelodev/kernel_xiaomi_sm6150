@@ -1417,7 +1417,6 @@ static int dwc3_probe(struct platform_device *pdev)
 	}
 
 	dwc->dwc_wq = alloc_ordered_workqueue("dwc_wq", WQ_HIGHPRI);
-
 	if (!dwc->dwc_wq) {
 		dev_err(dev,
 			"%s: Unable to create workqueue dwc_wq\n", __func__);
@@ -1518,11 +1517,7 @@ static int dwc3_remove(struct platform_device *pdev)
 	dwc3_gadget_exit(dwc);
 	dwc3_debugfs_exit(dwc);
 
-	dwc3_core_exit(dwc);
-	dwc3_ulpi_exit(dwc);
-
 	pm_runtime_allow(&pdev->dev);
-
 	pm_runtime_disable(&pdev->dev);
 	pm_runtime_put_noidle(&pdev->dev);
 	pm_runtime_set_suspended(&pdev->dev);

@@ -184,9 +184,6 @@ static struct power_supply *cp_get_fc_psy(void)
 			pm_state.fc_psy = power_supply_get_by_name("bq2597x-standalone");
 	}
 
-	if (!pm_state.fc_psy)
-		pm_state.fc_psy = power_supply_get_by_name("ln8000");
-
 	return pm_state.fc_psy;
 }
 
@@ -461,9 +458,8 @@ static int cp_set_qc_bus_protections(int hvdcp3_type)
 		return -ENODEV;
 
 	val.intval = hvdcp3_type;
-	
-	//test?
-	ret = HVDCP3P5_CLASSB_27W;
+	ret = power_supply_set_property(psy,
+			POWER_SUPPLY_PROP_TI_SET_BUS_PROTECTION_FOR_QC3, &val);
 
 	return ret;
 }
@@ -1086,7 +1082,8 @@ void cp_statemachine(unsigned int port)
 
 	case CP_STATE_FLASH2_ENTRY_3:
 		if (sys_config.qc3p5_supported) {
-			if (pm_state.bq2597x.bus_error_status == VBUS_ERROR_HIGH) {
+			if (pm_state.bq2597x.bus_error_status == VBUS_ERROR_HIGH
+				|| pm_state.bq2597x.vbus_volt > (pm_state.bq2597x.vbat_volt * 2 + BUS_VOLT_INIT_UP + 200)) {
 				pr_err("vbus=%d, too high to open cp switcher, decrease it.\n",
 						pm_state.bq2597x.vbus_volt);
 				cp_tune_vbus_volt(VOLT_DOWN);
@@ -1193,8 +1190,6 @@ void cp_statemachine(unsigned int port)
 
 static void cp_workfunc(struct work_struct *work)
 {
-	struct power_supply *onsemi_psy;
-	
 	cp_get_usb_type();
 
 	cp_update_sw_status();
@@ -1207,9 +1202,9 @@ static void cp_workfunc(struct work_struct *work)
 	/* check whether usb is present */
 	if (pm_state.usb_present == 0) {
 		cp_set_qc_bus_protections(HVDCP3_NONE);
-		onsemi_psy = power_supply_get_by_name("ln8000");
-		if (onsemi_psy)
-			pm_state.state = CP_STATE_DISCONNECT;
+#ifdef CONFIG_CHARGER_LN8000
+		pm_state.state = CP_STATE_DISCONNECT;
+#endif
 		return;
 	}
 

@@ -804,16 +804,16 @@ static int psy_chg_get_ti_alarm_status(struct ln8000_info *info)
              (info->tdie_alarm << DIE_THERM_ALARM_SHIFT));
 
     v_offset = info->vbus_uV - (info->vbat_uV * 2);
-    /* after charging-enabled, When the input current rises above rcp_th(over 400mA), it activates rcp. */
+    /* after charging-enabled, When the input current rises above rcp_th(over 200mA), it activates rcp. */
     if (info->chg_en && !(info->rcp_en)) {
-        if (info->iin_uA > 400000) {
+        if (info->iin_uA > 200000 && v_offset > 300000) {
             ln8000_enable_rcp(info, 1);
             ln_info("enabled rcp\n");
         }
     }
-    /* If an unplug event occurs when vbus voltage lower then iin(70mA) and v_offset(100mV), switch to standby mode. */
+    /* If an unplug event occurs when vbus voltage lower then vin_start_up_th, switch to standby mode. */
     if (info->chg_en && !(info->rcp_en)) {
-        if (info->iin_uA < 70000 && v_offset < 100000) {
+        if (v_offset < 100000) {
             ln8000_change_opmode(info, LN8000_OPMODE_STANDBY);
             ln_info("forced change standby_mode for prevent reverse current\n");
 		info->chg_en = 0;
@@ -959,10 +959,6 @@ static int psy_chg_set_charging_enable(struct ln8000_info *info, int val)
 {
     int op_mode;
 
-    /* skip duplicate command of charging enable */
-    if (val == info->chg_en)
-        return 0;
-
     if (val) {
         ln_info("start charging\n");
         op_mode = LN8000_OPMODE_SWITCHING;
@@ -1005,22 +1001,22 @@ static int psy_chg_set_bus_protection_for_qc3(struct ln8000_info *info, int hvdc
 {
 	ln_info("hvdcp3_type: %d\n", hvdcp3_type);
 
-	/*if (hvdcp3_type == HVDCP3_CLASSA_18W) {
+	if (hvdcp3_type == HVDCP3_CLASSA_18W) {
         ln8000_set_vac_ovp(info, BUS_OVP_FOR_QC);
         info->vin_ovp_alarm_th = BUS_OVP_ALARM_FOR_QC;
         ln8000_set_iin_limit(info, BUS_OCP_FOR_QC_CLASS_A - 700000);
         info->iin_ocp_alarm_th = BUS_OCP_ALARM_FOR_QC_CLASS_A;
-	} else if (hvdcp3_type == HVDCP3_CLASSB_27W) {*/
+	} else if (hvdcp3_type == HVDCP3_CLASSB_27W) {
         ln8000_set_vac_ovp(info, BUS_OVP_FOR_QC);
         info->vin_ovp_alarm_th = BUS_OVP_ALARM_FOR_QC;
         ln8000_set_iin_limit(info, BUS_OCP_FOR_QC_CLASS_B - 700000);
         info->iin_ocp_alarm_th = BUS_OCP_ALARM_FOR_QC_CLASS_B;
-	/*} else {
+	} else {
         ln8000_set_vac_ovp(info, info->pdata->bus_ovp_th);
         info->vin_ovp_alarm_th = info->pdata->bus_ovp_alarm_th;
         ln8000_set_iin_limit(info, info->pdata->bus_ocp_th - 700000);
         info->iin_ocp_alarm_th = info->pdata->bus_ocp_alarm_th;
-	}*/
+	}
 
     ln8000_print_regmap(info);
 
@@ -1183,7 +1179,7 @@ static void vac_ov_control_work(struct work_struct *work)
     u32 sys_st;
     bool enable_vac_ov = 1;
 
-	ta_detached = 0;
+    ta_detached = 0;
     cnt = 5000 / delay;
     for (i = 0; i < cnt; ++i) {
         ln8000_get_adc_data(info, LN8000_ADC_CH_VIN, &info->vbus_uV);
@@ -1210,7 +1206,7 @@ static void vac_ov_control_work(struct work_struct *work)
             ln_info("sys_st=0x%x, ta_detached=%d\n", sys_st, ta_detached);
             if (ta_detached > 2) {
                 goto teminate_work;
-			}
+            }
         }
 
         msleep(delay);

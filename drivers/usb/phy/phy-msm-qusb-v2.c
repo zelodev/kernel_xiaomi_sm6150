@@ -161,6 +161,7 @@ struct qusb_phy {
 	int			efuse_pll_bias_seq_host_len;
 	int			*override_tune1_seq_host;
 	int			override_tune1_seq_host_len;
+
 	/* override TUNEX registers value */
 	struct dentry		*root;
 	u8			tune[5];
@@ -1232,6 +1233,7 @@ static int qusb_phy_probe(struct platform_device *pdev)
 
 	qphy->emulation = of_property_read_bool(dev->of_node,
 					"qcom,emulation");
+
 	size = 0;
 	of_get_property(dev->of_node, "qcom,emu-init-seq", &size);
 	if (size) {

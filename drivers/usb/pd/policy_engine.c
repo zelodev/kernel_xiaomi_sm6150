@@ -465,7 +465,7 @@ struct usbpd {
 	struct regulator	*vconn;
 	bool			vbus_enabled;
 	bool			vconn_enabled;
-        bool			vconn_is_external;
+	bool			vconn_is_external;
 	u32			limit_curr;
 	u32			pd_max_curr_limit;
 	u32 			limit_pd_unverified_pps_vbus;
@@ -475,8 +475,8 @@ struct usbpd {
 	u8			rx_msgid[SOPII_MSG + 1];
 	int			caps_count;
 	int			hard_reset_count;
-	enum vdm_state		vdm_state;
 
+	enum vdm_state		vdm_state;
 	u16			*discovered_svids;
 	int			num_svids;
 	struct vdm_tx		*vdm_tx;
@@ -500,13 +500,6 @@ struct usbpd {
 	bool			verifed;
 	int			uvdm_state;
 	bool			pps_weak_limit;
-
-	/* for MI smart inter-charge */
-	bool			enable_smart_interchg;
-	struct delayed_work	send_sink_soc_work;
-	struct delayed_work	swap_interchg_work;
-	unsigned int		sink_soc;
-	unsigned int		source_soc;
 
 	/* non-qcom pps control */
 	bool		non_qcom_pps_ctr;
@@ -536,7 +529,6 @@ static const unsigned int usbpd_extcon_cable[] = {
 };
 
 static void handle_vdm_tx(struct usbpd *pd, enum pd_sop_type sop_type);
-static int usbpd_request_vdm_cmd(struct usbpd *pd, enum uvdm_state cmd, unsigned int *data);
 
 enum plug_orientation usbpd_get_plug_orientation(struct usbpd *pd)
 {
@@ -641,57 +633,6 @@ static void restart_usb_host_work(struct work_struct *w)
 	}
 
 	start_usb_host(pd, false);
-}
-
-static void send_sink_soc_func(struct work_struct *w)
-{
-	struct usbpd *pd = container_of(w, struct usbpd, send_sink_soc_work.work);
-	union power_supply_propval val = {0};
-	int ret = 0;
-
-	if (!pd->bat_psy)
-		return;
-
-	if (pd->dual_role->reverse_flag) {
-		pr_info("reverse charge done, don't send sink_soc");
-		return;
-	}
-
-	ret = power_supply_get_property(pd->bat_psy, POWER_SUPPLY_PROP_CAPACITY, &val);
-	if (ret)
-		return;
-	else
-		pd->sink_soc = val.intval;
-
-	if (pd->sink_soc >= 1 && pd->sink_soc <=100)
-		usbpd_request_vdm_cmd(pd, USBPD_UVDM_SINK_CAPACITY, &pd->sink_soc);
-}
-
-static void swap_interchg_func(struct work_struct *w)
-{
-	struct usbpd *pd = container_of(w, struct usbpd, swap_interchg_work.work);
-	union power_supply_propval val = {0};
-	unsigned int power_role = DUAL_ROLE_PROP_PR_SNK, data_role = DUAL_ROLE_PROP_DR_DEVICE;
-	int ret = 0;
-
-	if (!pd->bat_psy)
-		return;
-
-	if (pd->dual_role->reverse_flag) {
-		pr_info("reverse charge done, don't swap interchg");
-		return;
-	}
-
-	ret = power_supply_get_property(pd->bat_psy, POWER_SUPPLY_PROP_CAPACITY, &val);
-	if (ret)
-		return;
-	else
-		pd->source_soc = val.intval;
-
-	if (pd->source_soc < pd->sink_soc) {
-		pd->dual_role->desc->set_property(pd->dual_role, DUAL_ROLE_PROP_PR, &power_role);
-		pd->dual_role->desc->set_property(pd->dual_role, DUAL_ROLE_PROP_DR, &data_role);
-	}
 }
 
 /**
@@ -823,6 +764,7 @@ static int pd_send_msg(struct usbpd *pd, u8 msg_type, const u32 *data,
 		hdr = PD_MSG_HDR(msg_type, 0, 0, pd->tx_msgid[sop], num_data,
 				pd->spec_rev);
 	pd->tx_msgid[sop] = (pd->tx_msgid[sop] + 1) & PD_MAX_MSG_ID;
+
 	/* bail out and try again later if a message just arrived */
 	spin_lock_irqsave(&pd->rx_lock, flags);
 	if (!list_empty(&pd->rx_q)) {
@@ -1150,9 +1092,6 @@ static int pd_eval_src_caps(struct usbpd *pd)
 			}
 		}
 	}
-
-	if (pd->enable_smart_interchg && max_volt * max_curr == USBPD_MIPHONE_POWER)
-		schedule_delayed_work(&pd->send_sink_soc_work, msecs_to_jiffies(USBPD_SEND_CAPACITY_DELAY));
 
 	return 0;
 }
@@ -2788,12 +2727,6 @@ static void usbpd_sm(struct work_struct *w)
 			pd_phy_close();
 			pd->pd_phy_opened = false;
 		}
-
-		cancel_delayed_work_sync(&pd->send_sink_soc_work);
-		cancel_delayed_work_sync(&pd->swap_interchg_work);
-		pd->dual_role->reverse_flag = false;
-		pd->sink_soc = 0;
-		pd->source_soc = 0;
 
 		pd->in_pr_swap = false;
 		pd->pd_connected = false;
@@ -4861,13 +4794,6 @@ static int usbpd_request_vdm_cmd(struct usbpd *pd, enum uvdm_state cmd, unsigned
 			return rc;
 		}
 		break;
-	case USBPD_UVDM_SINK_CAPACITY:
-		rc = usbpd_send_vdm(pd, vdm_hdr, data, USBPD_UVDM_CAPACITY_LEN);
-		if (rc < 0) {
-			usbpd_err(&pd->dev, "failed to send %d\n", cmd);
-			return rc;
-		}
-		break;
 	default:
 		usbpd_err(&pd->dev, "cmd:%d is not support\n", cmd);
 		break;
@@ -5090,8 +5016,6 @@ static void usbpd_mi_vdm_received_cb(struct usbpd_svid_handler *hdlr, u32 vdm_hd
 
 	cmd = UVDM_HDR_CMD(vdm_hdr);
 
-	usbpd_dbg(&pd->dev, "hdlr->svid:0x%04x, vdm_hdr:0x%08x, num_vdos:%d, cmd:%d\n", hdlr->svid, vdm_hdr, num_vdos, cmd);
-
 	switch (cmd) {
 	case USBPD_UVDM_CHARGER_VERSION:
 		pd->vdm_data.ta_version = vdos[0];
@@ -5137,11 +5061,6 @@ static void usbpd_mi_vdm_received_cb(struct usbpd_svid_handler *hdlr, u32 vdm_hd
 			pd->vdm_data.digest[i] = vdos[i];
 			usbpd_dbg(&pd->dev, "usbpd digest[%d]=0x%x", i, vdos[i]);
 		}
-		break;
-	case USBPD_UVDM_SINK_CAPACITY:
-		pd->sink_soc = vdos[0];
-		if (pd->enable_smart_interchg)
-			schedule_delayed_work(&pd->swap_interchg_work, msecs_to_jiffies(USBPD_SWAP_INTERCHG_DELAY));
 		break;
 	default:
 		break;
@@ -5340,8 +5259,6 @@ struct usbpd *usbpd_create(struct device *parent)
 	INIT_WORK(&pd->sm_work, usbpd_sm);
 	INIT_WORK(&pd->start_periph_work, start_usb_peripheral_work);
 	INIT_WORK(&pd->restart_host_work, restart_usb_host_work);
-	INIT_DELAYED_WORK(&pd->send_sink_soc_work, send_sink_soc_func);
-	INIT_DELAYED_WORK(&pd->swap_interchg_work, swap_interchg_func);
 	hrtimer_init(&pd->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	pd->timer.function = pd_timeout;
 	mutex_init(&pd->swap_lock);
@@ -5409,7 +5326,6 @@ struct usbpd *usbpd_create(struct device *parent)
 		goto put_psy;
 	}
 
-	pd->enable_smart_interchg = of_property_read_bool(parent->of_node, "mi,smart-interchg-enable");
 
 	ret = of_property_read_u32(parent->of_node, "mi,pd_curr_limit",
 			&pd->limit_curr);

@@ -30,14 +30,7 @@
 		__func__, ##__VA_ARGS__)	\
 
 #define smblib_dbg(chg, reason, fmt, ...)			\
-	do {							\
-		if (*chg->debug_mask & (reason))		\
-			pr_info("%s: %s: " fmt, chg->name,	\
-				__func__, ##__VA_ARGS__);	\
-		else						\
-			pr_debug("%s: %s: " fmt, chg->name,	\
-				__func__, ##__VA_ARGS__);	\
-	} while (0)
+	do { } while (0)
 
 static bool is_secure(struct smb_charger *chg, int addr)
 {
@@ -479,14 +472,14 @@ static int smblib_set_usb_pd_allowed_voltage(struct smb_charger *chg,
 		allowed_voltage = USBIN_ADAPTER_ALLOW_9V;
 		smblib_set_opt_freq_buck(chg, chg->chg_freq.freq_9V);
 	} else if (min_allowed_uv == MICRO_12V && max_allowed_uv == MICRO_12V) {
-		allowed_voltage = USBIN_ADAPTER_ALLOW_9V;
+		allowed_voltage = USBIN_ADAPTER_ALLOW_12V;
 		smblib_set_opt_freq_buck(chg, chg->chg_freq.freq_12V);
 	} else if (min_allowed_uv < MICRO_9V && max_allowed_uv <= MICRO_9V) {
 		allowed_voltage = USBIN_ADAPTER_ALLOW_5V_TO_9V;
 	} else if (min_allowed_uv < MICRO_9V && max_allowed_uv <= MICRO_12V) {
-		allowed_voltage = USBIN_ADAPTER_ALLOW_5V_TO_9V;
+		allowed_voltage = USBIN_ADAPTER_ALLOW_5V_TO_12V;
 	} else if (min_allowed_uv < MICRO_12V && max_allowed_uv <= MICRO_12V) {
-		allowed_voltage = USBIN_ADAPTER_ALLOW_9V;
+		allowed_voltage = USBIN_ADAPTER_ALLOW_9V_TO_12V;
 	} else {
 		smblib_err(chg, "invalid allowed voltage [%d, %d]\n",
 			min_allowed_uv, max_allowed_uv);
@@ -741,9 +734,9 @@ static void smblib_uusb_removal(struct smb_charger *chg)
 
 	/* reconfigure allowed voltage for HVDCP */
 	rc = smblib_set_adapter_allowance(chg,
-			USBIN_ADAPTER_ALLOW_5V_TO_9V);
+			USBIN_ADAPTER_ALLOW_5V_OR_9V_TO_12V);
 	if (rc < 0)
-		smblib_err(chg, "Couldn't set USBIN_ADAPTER_ALLOW_5V_TO_9V rc=%d\n",
+		smblib_err(chg, "Couldn't set USBIN_ADAPTER_ALLOW_5V_OR_9V_TO_12V rc=%d\n",
 			rc);
 
 	chg->voltage_min_uv = MICRO_5V;
@@ -1296,7 +1289,7 @@ static int smblib_awake_vote_callback(struct votable *votable, void *data,
 	struct smb_charger *chg = data;
 
 	if (awake)
-		pm_wakeup_event(chg->dev, 500);
+		pm_stay_awake(chg->dev);
 	else
 		pm_relax(chg->dev);
 
@@ -2469,7 +2462,7 @@ int smblib_get_prop_usb_voltage_max(struct smb_charger *chg,
 		if (chg->chg_param.smb_version == PM660_SUBTYPE)
 			val->intval = MICRO_9V;
 		else
-			val->intval = MICRO_9V;
+			val->intval = MICRO_12V;
 		break;
 	case POWER_SUPPLY_TYPE_USB_PD:
 		val->intval = chg->voltage_max_uv;
@@ -2492,7 +2485,7 @@ int smblib_get_prop_usb_voltage_max_design(struct smb_charger *chg,
 		if (chg->chg_param.smb_version == PM660_SUBTYPE)
 			val->intval = MICRO_9V;
 		else
-			val->intval = MICRO_9V;
+			val->intval = MICRO_12V;
 		break;
 	default:
 		val->intval = MICRO_5V;
@@ -3678,7 +3671,7 @@ void smblib_usb_plugin_locked(struct smb_charger *chg)
 
 		/* Schedule work to enable parallel charger */
 		vote(chg->awake_votable, PL_DELAY_VOTER, true, 0);
-		schedule_delayed_work(&chg->pl_enable_work,
+		queue_delayed_work(system_power_efficient_wq, &chg->pl_enable_work,
 					msecs_to_jiffies(PL_DELAY_MS));
 		/* vbus rising when APSD was disabled and PD_ACTIVE = 0 */
 		if (get_effective_result(chg->apsd_disable_votable) &&
@@ -3760,7 +3753,7 @@ irqreturn_t smblib_handle_icl_change(int irq, void *data)
 			delay = 0;
 
 		cancel_delayed_work_sync(&chg->icl_change_work);
-		schedule_delayed_work(&chg->icl_change_work,
+		queue_delayed_work(system_power_efficient_wq, &chg->icl_change_work,
 						msecs_to_jiffies(delay));
 	}
 
@@ -4002,8 +3995,8 @@ static void smblib_force_legacy_icl(struct smb_charger *chg, int pst)
 		vote(chg->usb_icl_votable, LEGACY_UNKNOWN_VOTER, true, 3000000);
 		break;
 	default:
-		smblib_err(chg, "Unknown APSD %d; forcing suspend\n", pst);
-		vote(chg->usb_icl_votable, LEGACY_UNKNOWN_VOTER, true, 0);
+		smblib_err(chg, "Unknown APSD %d; forcing 500mA\n", pst);
+		vote(chg->usb_icl_votable, LEGACY_UNKNOWN_VOTER, true, 500000);
 		break;
 	}
 }
@@ -4070,7 +4063,7 @@ static void smblib_handle_apsd_done(struct smb_charger *chg, bool rising)
 		break;
 	case DCP_CHARGER_BIT:
 		if (chg->wa_flags & QC_CHARGER_DETECTION_WA_BIT)
-			schedule_delayed_work(&chg->hvdcp_detect_work,
+			queue_delayed_work(system_power_efficient_wq, &chg->hvdcp_detect_work,
 					      msecs_to_jiffies(HVDCP_DET_MS));
 		break;
 	default:
@@ -4361,7 +4354,7 @@ static void smblib_handle_typec_removal(struct smb_charger *chg)
 	cancel_delayed_work_sync(&chg->hvdcp_detect_work);
 
 	/* reset input current limit voters */
-	vote(chg->usb_icl_votable, LEGACY_UNKNOWN_VOTER, true, 0);
+	vote(chg->usb_icl_votable, LEGACY_UNKNOWN_VOTER, true, 100000);
 	vote(chg->usb_icl_votable, PD_VOTER, false, 0);
 	vote(chg->usb_icl_votable, USB_PSY_VOTER, false, 0);
 	vote(chg->usb_icl_votable, DCP_VOTER, false, 0);
@@ -4454,9 +4447,9 @@ static void smblib_handle_typec_removal(struct smb_charger *chg)
 
 	/* reconfigure allowed voltage for HVDCP */
 	rc = smblib_set_adapter_allowance(chg,
-			USBIN_ADAPTER_ALLOW_5V_TO_9V);
+			USBIN_ADAPTER_ALLOW_5V_OR_9V_TO_12V);
 	if (rc < 0)
-		smblib_err(chg, "Couldn't set USBIN_ADAPTER_ALLOW_5V_TO_9V rc=%d\n",
+		smblib_err(chg, "Couldn't set USBIN_ADAPTER_ALLOW_5V_OR_9V_TO_12V rc=%d\n",
 			rc);
 
 	if (chg->is_audio_adapter == true)
@@ -4643,7 +4636,7 @@ irqreturn_t smblib_handle_usb_typec_change(int irq, void *data)
 		cancel_delayed_work_sync(&chg->uusb_otg_work);
 		vote(chg->awake_votable, OTG_DELAY_VOTER, true, 0);
 		smblib_dbg(chg, PR_INTERRUPT, "Scheduling OTG work\n");
-		schedule_delayed_work(&chg->uusb_otg_work,
+		queue_delayed_work(system_power_efficient_wq, &chg->uusb_otg_work,
 				msecs_to_jiffies(chg->otg_delay_ms));
 		return IRQ_HANDLED;
 	}
@@ -4691,7 +4684,7 @@ irqreturn_t smblib_handle_high_duty_cycle(int irq, void *data)
 	if (chg->irq_info[HIGH_DUTY_CYCLE_IRQ].irq)
 		disable_irq_nosync(chg->irq_info[HIGH_DUTY_CYCLE_IRQ].irq);
 
-	schedule_delayed_work(&chg->clear_hdc_work, msecs_to_jiffies(60));
+	queue_delayed_work(system_power_efficient_wq, &chg->clear_hdc_work, msecs_to_jiffies(60));
 
 	return IRQ_HANDLED;
 }
@@ -4757,7 +4750,7 @@ irqreturn_t smblib_handle_switcher_power_ok(int irq, void *data)
 			 * permanently suspending the input if the boost-back
 			 * condition is unintentionally hit.
 			 */
-			schedule_delayed_work(&chg->bb_removal_work,
+			queue_delayed_work(system_power_efficient_wq, &chg->bb_removal_work,
 				msecs_to_jiffies(BOOST_BACK_UNVOTE_DELAY_MS));
 		}
 	}
@@ -4998,7 +4991,7 @@ static void smblib_otg_oc_work(struct work_struct *work)
 	 * triggered then it is likely that the software based soft start was
 	 * successful and the VBUS < 1V restriction should be re-enabled.
 	 */
-	schedule_delayed_work(&chg->otg_ss_done_work, msecs_to_jiffies(500));
+	queue_delayed_work(system_power_efficient_wq, &chg->otg_ss_done_work, msecs_to_jiffies(500));
 
 	rc = _smblib_vbus_regulator_disable(chg->vbus_vreg->rdev);
 	if (rc < 0) {

@@ -138,12 +138,9 @@ static int read_channel(struct gab *adc_bat, enum power_supply_property psp,
 			result);
 	if (ret < 0)
 		pr_err("read channel error\n");
-<<<<<<< HEAD
 	else
 		*result *= 1000;
 
-=======
->>>>>>> 163c34b096aa (import power)
 	return ret;
 }
 
