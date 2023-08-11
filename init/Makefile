@@ -3,6 +3,9 @@
 # Makefile for the linux kernel.
 #
 
+ccflags-y += -mllvm -inline-threshold=15000
+ccflags-y += -mllvm -inlinehint-threshold=10000
+
 ccflags-y := -fno-function-sections -fno-data-sections
 
 obj-y                          := main.o version.o mounts.o
