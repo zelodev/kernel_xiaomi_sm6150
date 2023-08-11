@@ -875,17 +875,14 @@ static inline void notification_work(struct work_struct *work)
 }
 #endif
 
-static inline irqreturn_t fpc1020_irq_handler(int irq, void *handle)
+static __always_inline irqreturn_t fpc1020_irq_handler(int irq, void *handle)
 {
 	struct fpc1020_data *fpc1020 = handle;
 
 	dev_dbg(fpc1020->dev, "%s\n", __func__);
 
 	mutex_lock(&fpc1020->lock);
-	if (atomic_read(&fpc1020->wakeup_enabled)) {
-		fpc1020->nbr_irqs_received++;
-		__pm_wakeup_event(fpc1020->ttw_wl, FPC_TTW_HOLD_TIME);
-	}
+	__pm_wakeup_event(fpc1020->ttw_wl, FPC_TTW_HOLD_TIME);
 	mutex_unlock(&fpc1020->lock);
 
 	sysfs_notify(&fpc1020->dev->kobj, NULL, dev_attr_irq.attr.name);
@@ -928,8 +925,20 @@ static inline int fpc1020_request_named_gpio(struct fpc1020_data *fpc1020,
 	return 0;
 }
 
+static void set_fingerprintd_nice(int nice)
+{
+	struct task_struct *p;
+
+	read_lock(&tasklist_lock);
+	for_each_process(p) {
+		if (strstr(p->comm, "erprint"))
+			set_user_nice(p, nice);
+	}
+	read_unlock(&tasklist_lock);
+}
+
 #ifndef FPC_DRM_INTERFACE_WA
-static inline int fpc_fb_notif_callback(struct notifier_block *nb,
+static __always_inline int fpc_fb_notif_callback(struct notifier_block *nb,
 				 unsigned long val, void *data)
 {
 	struct fpc1020_data *fpc1020 = container_of(nb, struct fpc1020_data,
@@ -949,9 +958,11 @@ static inline int fpc_fb_notif_callback(struct notifier_block *nb,
 		blank = *(int *)(evdata->data);
 		switch (blank) {
 		case MSM_DRM_BLANK_POWERDOWN:
+			set_fingerprintd_nice(MIN_NICE);
 			fpc1020->fb_black = true;
 			break;
 		case MSM_DRM_BLANK_UNBLANK:
+			set_fingerprintd_nice(0);
 			fpc1020->fb_black = false;
 			break;
 		default:
