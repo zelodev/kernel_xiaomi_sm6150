@@ -176,8 +176,8 @@ enum hvdcp3_type {
 #define BUS_OVP_ALARM_FOR_QC			9500
 #define BUS_OCP_FOR_QC_CLASS_A			3250
 #define BUS_OCP_ALARM_FOR_QC_CLASS_A			2000
-#define BUS_OCP_FOR_QC_CLASS_B			4500
-#define BUS_OCP_ALARM_FOR_QC_CLASS_B			4000
+#define BUS_OCP_FOR_QC_CLASS_B			3750
+#define BUS_OCP_ALARM_FOR_QC_CLASS_B			2800
 #define BUS_OCP_FOR_QC3P5_CLASS_A			3000
 #define BUS_OCP_ALARM_FOR_QC3P5_CLASS_A		2500
 #define BUS_OCP_FOR_QC3P5_CLASS_B			3500
@@ -1632,12 +1632,12 @@ static int bq2597x_set_bus_protection(struct bq2597x *bq, int hvdcp3_type)
 		bq2597x_set_busovp_alarm_th(bq, BUS_OVP_ALARM_FOR_QC);
 		bq2597x_set_busocp_th(bq, BUS_OCP_FOR_QC_CLASS_A);
 		bq2597x_set_busocp_alarm_th(bq, BUS_OCP_ALARM_FOR_QC_CLASS_A);
-	} else*/ if (hvdcp3_type == HVDCP3_CLASSB_27W) {
+	} else if (hvdcp3_type == HVDCP3_CLASSB_27W) {*/
 		bq2597x_set_busovp_th(bq, BUS_OVP_FOR_QC);
 		bq2597x_set_busovp_alarm_th(bq, BUS_OVP_ALARM_FOR_QC);
 		bq2597x_set_busocp_th(bq, BUS_OCP_FOR_QC_CLASS_B);
 		bq2597x_set_busocp_alarm_th(bq, BUS_OCP_ALARM_FOR_QC_CLASS_B);
-	} /*else if (hvdcp3_type == HVDCP3P5_CLASSA_18W) {
+	/*} else if (hvdcp3_type == HVDCP3P5_CLASSA_18W) {
 		bq2597x_set_busovp_th(bq, BUS_OVP_FOR_QC);
 		bq2597x_set_busovp_alarm_th(bq, BUS_OVP_ALARM_FOR_QC);
 		bq2597x_set_busocp_th(bq, BUS_OCP_FOR_QC3P5_CLASS_A);

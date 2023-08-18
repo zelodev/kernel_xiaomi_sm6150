@@ -4309,7 +4309,7 @@ int smblib_get_prop_dc_current_max(struct smb_charger *chg,
 int smblib_get_prop_dc_voltage_max(struct smb_charger *chg,
 				    union power_supply_propval *val)
 {
-	val->intval = MICRO_12V;
+	val->intval = MICRO_9V;
 	return 0;
 }
 
@@ -4529,7 +4529,7 @@ int smblib_get_prop_usb_voltage_max_design(struct smb_charger *chg,
 		if (chg->chg_param.smb_version == PMI632_SUBTYPE)
 			val->intval = MICRO_9V;
 		else
-			val->intval = MICRO_12V;
+			val->intval = MICRO_9V;
 		break;
 	default:
 		val->intval = MICRO_5V;
@@ -4558,10 +4558,10 @@ int smblib_get_prop_usb_voltage_max(struct smb_charger *chg,
 		if (chg->chg_param.smb_version == PMI632_SUBTYPE)
 			val->intval = MICRO_9V;
 		else
-			val->intval = MICRO_12V;
+			val->intval = MICRO_9V;
 		break;
 	case POWER_SUPPLY_TYPE_USB_PD:
-		val->intval = chg->voltage_max_uv;
+		val->intval = MICRO_9V;
 		break;
 	default:
 		val->intval = MICRO_5V;
@@ -4580,7 +4580,7 @@ static int smblib_estimate_adaptor_voltage(struct smb_charger *chg,
 
 	switch (chg->real_charger_type) {
 	case POWER_SUPPLY_TYPE_USB_HVDCP:
-		val->intval = MICRO_12V;
+		val->intval = MICRO_9V;
 		break;
 	case POWER_SUPPLY_TYPE_USB_HVDCP_3P5:
 		step_uv = HVDCP3P5_STEP_UV;
@@ -7246,9 +7246,9 @@ struct quick_charge adapter_cap[11] = {
 	{ POWER_SUPPLY_TYPE_USB_CDP,    QUICK_CHARGE_NORMAL },
 	{ POWER_SUPPLY_TYPE_USB_ACA,    QUICK_CHARGE_NORMAL },
 	{ POWER_SUPPLY_TYPE_USB_FLOAT,  QUICK_CHARGE_NORMAL },
-	{ POWER_SUPPLY_TYPE_USB_PD,       QUICK_CHARGE_TURBE },
-	{ POWER_SUPPLY_TYPE_USB_HVDCP,    QUICK_CHARGE_TURBE },
-	{ POWER_SUPPLY_TYPE_USB_HVDCP_3,  QUICK_CHARGE_TURBE },
+	{ POWER_SUPPLY_TYPE_USB_PD,       QUICK_CHARGE_FLASH },
+	{ POWER_SUPPLY_TYPE_USB_HVDCP,    QUICK_CHARGE_FLASH },
+	{ POWER_SUPPLY_TYPE_USB_HVDCP_3,  QUICK_CHARGE_FLASH },
 	{ POWER_SUPPLY_TYPE_USB_HVDCP_3P5,  QUICK_CHARGE_FLASH },
 	{ POWER_SUPPLY_TYPE_WIRELESS,     QUICK_CHARGE_FAST },
 	{0, 0},
@@ -7278,14 +7278,14 @@ int smblib_get_quick_charge_type(struct smb_charger *chg)
 	/* davinic do not need to report this type */
 	if ((chg->real_charger_type == POWER_SUPPLY_TYPE_USB_PD)
 				&& chg->pd_verifed && chg->qc_class_ab) {
-		return QUICK_CHARGE_TURBE;
+		return QUICK_CHARGE_FLASH;
 	}
 
 	if (chg->is_qc_class_b || chg->real_charger_type == POWER_SUPPLY_TYPE_USB_HVDCP_3P5)
-		return QUICK_CHARGE_TURBE;
+		return QUICK_CHARGE_FLASH;
 
 	if ((chg->real_charger_type == POWER_SUPPLY_TYPE_USB_DCP) && chg->hvdcp_recheck_status)
-		return QUICK_CHARGE_TURBE;
+		return QUICK_CHARGE_FLASH;
 
 	while (adapter_cap[i].adap_type != 0) {
 		if (chg->real_charger_type == adapter_cap[i].adap_type) {
