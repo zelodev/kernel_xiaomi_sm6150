@@ -91,7 +91,7 @@ do {                                                                    \
  * I2C control functions : when occurred I2C tranfer fault, we 
  * will retry to it. (default count:3) 
  */
-#define I2C_RETRY_CNT   3
+#define I2C_RETRY_CNT   5
 static int ln8000_read_reg(struct ln8000_info *info, u8 addr, void *data)
 {
     int i, ret = 0;
@@ -552,12 +552,12 @@ static int ln8000_check_status(struct ln8000_info *info)
         info->volt_qual = !(LN8000_STATUS(val[3], 1 << 5));
         if (info->volt_qual == 0) {
             ln_info("volt_fault_detected (volt_qual=%d)\n", info->volt_qual);
-		/* clear latched status */
-		ln8000_update_reg(info, LN8000_REG_TIMER_CTRL, 0x1 << 2, 0x1 << 2);
-		ln8000_update_reg(info, LN8000_REG_TIMER_CTRL, 0x1 << 2, 0x0 << 2);
         }
     }
     info->iin_oc     = LN8000_STATUS(val[3], LN8000_MASK_IIN_OC_DETECTED);
+
+	ln_info("LN8000_STATUS : SYS_STS[0x%2x], SAFETY_STS[0x%2x], FAULT1_STS[0x%2x], FAULT2_STS[0x%2x]\n",
+			val[0], val[1], val[2], val[3]);
 
     mutex_unlock(&info->data_lock);
 
@@ -578,7 +578,6 @@ static void ln8000_irq_sleep(struct ln8000_info *info, int suspend)
     }
 }
 
-#if 0
 static void ln8000_soft_reset(struct ln8000_info *info)
 {
     ln8000_write_reg(info, LN8000_REG_LION_CTRL, 0xC6);
@@ -591,7 +590,6 @@ static void ln8000_soft_reset(struct ln8000_info *info)
 
     ln8000_irq_sleep(info, 0);
 }
-#endif
 
 static void ln8000_update_opmode(struct ln8000_info *info)
 {
@@ -618,7 +616,6 @@ static void ln8000_update_opmode(struct ln8000_info *info)
         if (op_mode == LN8000_OPMODE_STANDBY) {
             ln8000_update_reg(info, LN8000_REG_SYS_CTRL, 1 << LN8000_BIT_STANDBY_EN, 1 << LN8000_BIT_STANDBY_EN);
             ln_info("forced trigger standby_en\n");
-		info->chg_en = 0;
         }
         ln_info("op_mode has been changed [%d]->[%d] (sys_st=0x%x)\n", info->op_mode, op_mode, val);
         info->op_mode = op_mode;
@@ -816,7 +813,6 @@ static int psy_chg_get_ti_alarm_status(struct ln8000_info *info)
         if (v_offset < 100000) {
             ln8000_change_opmode(info, LN8000_OPMODE_STANDBY);
             ln_info("forced change standby_mode for prevent reverse current\n");
-		info->chg_en = 0;
         }
     }
 
@@ -1507,11 +1503,15 @@ static int ln8000_probe(struct i2c_client *client, const struct i2c_device_id *i
 {
     struct ln8000_info *info;
     int ret = 0;
+	int retries = 0;
 
     /* detect device on connected i2c bus */
-    ret = i2c_smbus_read_byte_data(client, LN8000_REG_DEVICE_ID);
+	do {
+		ret = i2c_smbus_read_byte_data(client, LN8000_REG_DEVICE_ID);
+	} while (IS_ERR_VALUE((unsigned long)ret) && retries++ < I2C_RETRY_CNT);
     if (IS_ERR_VALUE((unsigned long)ret)) {
         dev_err(&client->dev, "fail to detect ln8000 on i2c_bus(addr=0x%x)\n", client->addr);
+		dev_err(&client->dev, "retries times:%d\n", retries);
         return -ENODEV;
     }
     dev_info(&client->dev, "device id=0x%x\n", ret);
@@ -1553,6 +1553,7 @@ static int ln8000_probe(struct i2c_client *client, const struct i2c_device_id *i
     mutex_init(&info->irq_lock);
     i2c_set_clientdata(client, info);
 
+	ln8000_soft_reset(info);
     ln8000_init_device(info);
 
     ret = ln8000_psy_register(info);
@@ -1594,7 +1595,7 @@ static int ln8000_probe(struct i2c_client *client, const struct i2c_device_id *i
 
 err_wakeup:
     if (LN8000_IS_PRIMARY(info) && client->irq) {
-       free_irq(client->irq, info);
+       //free_irq(client->irq, info);
        if (info->pdata->irq_gpio) {
            gpiod_put(info->pdata->irq_gpio);
        }
@@ -1623,7 +1624,7 @@ static int ln8000_remove(struct i2c_client *client)
     debugfs_remove_recursive(info->debug_root);
 
     if (LN8000_IS_PRIMARY(info) && client->irq) {
-       free_irq(client->irq, info);
+       //free_irq(client->irq, info);
        if (info->pdata->irq_gpio) {
            gpiod_put(info->pdata->irq_gpio);
        }

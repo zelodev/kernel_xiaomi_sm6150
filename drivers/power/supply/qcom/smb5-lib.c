@@ -1439,9 +1439,7 @@ static const struct apsd_result *smblib_update_usb_type(struct smb_charger *chg)
 
 	/* if PD is active, APSD is disabled so won't have a valid result */
 	if (chg->pd_active) {
-		chg->real_charger_type = POWER_SUPPLY_TYPE_USB_PD;
-	} else if (chg->qc3p5_detected) {
-		chg->real_charger_type = POWER_SUPPLY_TYPE_USB_HVDCP_3P5;
+		chg->real_charger_type = POWER_SUPPLY_TYPE_USB_HVDCP_3;
 	} else {
 		/*
 		 * Update real charger type only if its not FLOAT
@@ -3474,11 +3472,6 @@ static void smblib_hvdcp_adaptive_voltage_change(struct smb_charger *chg)
 	u8 stat;
 
 	if (chg->real_charger_type == POWER_SUPPLY_TYPE_USB_HVDCP) {
-		if (chg->qc2_unsupported) {
-			smblib_hvdcp_set_fsw(chg, QC_5V_BIT);
-			power_supply_changed(chg->usb_main_psy);
-			return;
-		}
 
 		rc = smblib_read(chg, QC_CHANGE_STATUS_REG, &stat);
 		if (rc < 0) {

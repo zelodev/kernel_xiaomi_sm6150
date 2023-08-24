@@ -287,8 +287,7 @@ static const struct apsd_result *smblib_get_apsd_result(struct smb_charger *chg)
 
 	if (apsd_stat & QC_CHARGER_BIT) {
 		/* since its a qc_charger, either return HVDCP3 or HVDCP2 */
-		if (result != &smblib_apsd_results[HVDCP3])
-			result = &smblib_apsd_results[HVDCP2];
+		result = &smblib_apsd_results[HVDCP3]
 	}
 
 	return result;
