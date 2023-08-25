@@ -487,7 +487,6 @@ static int cam_mem_util_get_dma_buf_fd(size_t len,
 	*buf = ion_alloc(len, heap_id_mask, flags);
 	if (IS_ERR_OR_NULL(*buf))
 		return -ENOMEM;
-
 	/*
 	 * increment the ref count so that ref count becomes 2 here
 	 * when we close fd, refcount becomes 1 and when we do
@@ -501,7 +500,6 @@ static int cam_mem_util_get_dma_buf_fd(size_t len,
 		rc = -EINVAL;
 		goto get_fd_fail;
 	}
-
 	return rc;
 
 get_fd_fail:
