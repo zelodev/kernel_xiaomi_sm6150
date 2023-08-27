@@ -24,7 +24,6 @@ obj-$(CONFIG_MQ_IOSCHED_DEADLINE)	+= mq-deadline.o
 obj-$(CONFIG_MQ_IOSCHED_KYBER)	+= kyber-iosched.o
 bfq-y				:= bfq-iosched.o bfq-wf2q.o bfq-cgroup.o
 obj-$(CONFIG_IOSCHED_BFQ)	+= bfq.o
-obj-$(CONFIG_IOSCHED_ANXIETY)	+= anxiety-iosched.o
 
 obj-$(CONFIG_IOSCHED_SWITCHER) += iosched_switcher.o
 obj-$(CONFIG_BLOCK_COMPAT)	+= compat_ioctl.o
