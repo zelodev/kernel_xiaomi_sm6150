@@ -41,8 +41,7 @@ static void anxiety_merged_requests(struct request_queue *q, struct request *rq,
 	list_del_init(&next->queuelist);
 }
 
-static inline int __anxiety_dispatch(struct request_queue *q,
-		struct request *rq)
+static int __anxiety_dispatch(struct request_queue *q, struct request *rq)
 {
 	if (!rq)
 		return -EINVAL;
