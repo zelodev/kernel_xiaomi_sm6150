@@ -32,7 +32,7 @@ struct anxiety_data {
 static void anxiety_merged_requests(struct request_queue *q, struct request *rq,
 		struct request *next)
 {
-	list_del_init(&next->queuelist);
+	rq_fifo_clear(next);
 }
 
 static inline struct request *anxiety_choose_request(struct anxiety_data *adata)
@@ -64,8 +64,8 @@ static int anxiety_dispatch(struct request_queue *q, int force)
 	if (!rq)
 		return 0;
 
-	list_del_init(&rq->queuelist);
-	elv_dispatch_sort(q, rq);
+	rq_fifo_clear(rq);
+	elv_dispatch_add_tail(rq->q, rq);
 
 	return 1;
 }
