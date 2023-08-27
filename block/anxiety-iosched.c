@@ -35,38 +35,42 @@ static void anxiety_merged_requests(struct request_queue *q, struct request *rq,
 	list_del_init(&next->queuelist);
 }
 
-static int __anxiety_dispatch(struct request_queue *q, struct request *rq)
+static inline struct request *anxiety_choose_request(struct anxiety_data *adata)
 {
-	if (!rq)
-		return -EINVAL;
+	/* Perform read requests if ratio is unmet */
+	bool do_read = adata->contig_reads < adata->read_ratio;
 
+	/* Handle a read request */
+	if (do_read && !list_empty(&adata->queue[READ])) {
+		adata->contig_reads++;
+		return rq_entry_fifo(adata->queue[READ].next);
+	}
+
+	/* Handle a write request */
+	if (!list_empty(&adata->queue[WRITE])) {
+		adata->contig_reads = 0;
+		return rq_entry_fifo(adata->queue[WRITE].next);
+	}
+
+	/* Completed all pending requests; reset contiguous read counter */
+	adata->contig_reads = 0;
+	return NULL;
+}
+
+static void __anxiety_dispatch(struct request_queue *q, struct request *rq)
+{
 	list_del_init(&rq->queuelist);
 	elv_dispatch_sort(q, rq);
-
-	return 0;
 }
 
 static int anxiety_dispatch(struct request_queue *q, int force)
 {
-	struct anxiety_data *adata = q->elevator->elevator_data;
-	int batched;
+	struct request *rq = anxiety_choose_request(q->elevator->elevator_data);
 
-	/* Make sure we can even process any requests at all */
-	if (list_empty(&adata->queue[READ]) &&
-			list_empty(&adata->queue[WRITE]))
+	if (!rq)
 		return 0;
 
-	/* Batch read requests according to tunables */
-	for (batched = 0; batched < adata->read_ratio; batched++) {
-		if (!list_empty(&adata->queue[READ]))
-			__anxiety_dispatch(q,
-					rq_entry_fifo(adata->queue[READ].next));
-	}
-
-	/* Submit one write request after the read batch to avoid starvation */
-	if (!list_empty(&adata->queue[WRITE]))
-		__anxiety_dispatch(q,
-			rq_entry_fifo(adata->queue[WRITE].next));
+	__anxiety_dispatch(q, rq);
 
 	return 1;
 }
