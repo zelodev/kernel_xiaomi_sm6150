@@ -2,7 +2,6 @@
  * ln8000-charger.h - Charger driver for LIONSEMI LN8000
  *
  * Copyright (C) 2021 Lion Semiconductor Inc.
- * Copyright (C) 2021 XiaoMi, Inc.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
@@ -229,7 +228,7 @@ enum ln8000_adc_hibernate_delay_desc {
 /* device default values */
 #define LN8000_BAT_OVP_DEFAULT          4440000
 #define LN8000_BUS_OVP_DEFAULT          9500000
-#define LN8000_BUS_OCP_DEFAULT          5000000
+#define LN8000_BUS_OCP_DEFAULT          2000000
 
 #define LN8000_NTC_ALARM_CFG_DEFAULT    226         /* NTC alarm threshold (~40C) */
 #define LN8000_NTC_SHUTDOWN_CFG         2           /* NTC shutdown config (-16LSB ~ 4.3C) */
@@ -237,8 +236,8 @@ enum ln8000_adc_hibernate_delay_desc {
 #define LN8000_IIN_CFG_DEFAULT          2000000     /* 2A=2,000,000uA, input current limit */
 
 /* bus protection values for QC */
-#define BUS_OVP_FOR_QC                  9500000 /* ln8000 didn't used 10V, (support tot 6.5V, 11V, 12V, 13V) */
-#define BUS_OVP_ALARM_FOR_QC			9250000
+#define BUS_OVP_FOR_QC                  13000000 /* ln8000 didn't used 10V, (support tot 6.5V, 11V, 12V, 13V) */
+#define BUS_OVP_ALARM_FOR_QC			9500000
 #define BUS_OCP_FOR_QC_CLASS_A			3250000
 #define BUS_OCP_ALARM_FOR_QC_CLASS_A    2000000
 #define BUS_OCP_FOR_QC_CLASS_B			3750000
