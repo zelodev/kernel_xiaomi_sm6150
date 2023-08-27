@@ -58,55 +58,41 @@ static inline int __anxiety_dispatch(struct request_queue *q,
 	return 0;
 }
 
-static uint16_t anxiety_dispatch_batch(struct request_queue *q)
+static void anxiety_dispatch_batch(struct request_queue *q)
 {
 	struct anxiety_data *adata = q->elevator->elevator_data;
-	uint8_t i;
-	uint16_t dispatched;
+	uint8_t batched;
 
 	/* Batch sync requests according to tunables */
-	for (i = 0; i < adata->sync_ratio; i++) {
-		if (!list_empty(&adata->queue[SYNC])) {
+	for (batched = 0; batched < adata->sync_ratio; batched++) {
+		if (!list_empty(&adata->queue[SYNC]))
 			__anxiety_dispatch(q,
 					anxiety_next_entry(&adata->queue[SYNC]));
-			dispatched++;
-		}
 	}
 
 	/* Submit one async request after the sync batch to avoid starvation */
-	if (!list_empty(&adata->queue[ASYNC])) {
+	if (!list_empty(&adata->queue[ASYNC]))
 		__anxiety_dispatch(q,
 				anxiety_next_entry(&adata->queue[ASYNC]));
-		dispatched++;
-	}
-
-	return dispatched;
 }
 
-static uint16_t anxiety_dispatch_drain(struct request_queue *q)
+static void anxiety_dispatch_drain(struct request_queue *q)
 {
 	struct anxiety_data *adata = q->elevator->elevator_data;
-	uint16_t dispatched;
 
 	/*
 	 * Fallback to non-bias request dispatching when a mandatory
 	 * queue drain has been requested.
 	 */
 	while (anxiety_can_dispatch(adata)) {
-		if (!list_empty(&adata->queue[SYNC])) {
+		if (!list_empty(&adata->queue[SYNC]))
 			__anxiety_dispatch(q,
 					anxiety_next_entry(&adata->queue[SYNC]));
-			dispatched++;
-		}
 
-		if (!list_empty(&adata->queue[ASYNC])) {
+		if (!list_empty(&adata->queue[ASYNC]))
 			__anxiety_dispatch(q,
 					anxiety_next_entry(&adata->queue[ASYNC]));
-			dispatched++;
-		}
 	}
-
-	return dispatched;
 }
 
 static int anxiety_dispatch(struct request_queue *q, int force)
@@ -122,9 +108,11 @@ static int anxiety_dispatch(struct request_queue *q, int force)
 	 * performed in one scheduler dispatch.
 	 */
 	if (unlikely(force))
-		return anxiety_dispatch_drain(q);
+		anxiety_dispatch_drain(q);
 
-	return anxiety_dispatch_batch(q);
+	anxiety_dispatch_batch(q);
+
+	return 1;
 }
 
 static void anxiety_add_request(struct request_queue *q, struct request *rq)
