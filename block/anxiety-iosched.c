@@ -12,7 +12,7 @@
 #include <linux/slab.h>
 #include <linux/init.h>
 
-/* Batch this many synchronous requests at a time */
+/* For this many sync requests, perform one async request */
 #define	DEFAULT_SYNC_RATIO	(4)
 
 enum {
