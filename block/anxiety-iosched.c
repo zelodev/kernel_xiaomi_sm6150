@@ -58,10 +58,14 @@ static inline int __anxiety_dispatch(struct request_queue *q,
 	return 0;
 }
 
-static void anxiety_dispatch_batch(struct request_queue *q)
+static int anxiety_dispatch(struct request_queue *q, int force)
 {
 	struct anxiety_data *adata = q->elevator->elevator_data;
 	uint8_t batched;
+
+	/* Make sure we can even process any requests at all */
+	if (!anxiety_can_dispatch(adata))
+		return 0;
 
 	/* Batch sync requests according to tunables */
 	for (batched = 0; batched < adata->sync_ratio; batched++) {
@@ -74,17 +78,6 @@ static void anxiety_dispatch_batch(struct request_queue *q)
 	if (!list_empty(&adata->queue[ASYNC]))
 		__anxiety_dispatch(q,
 				anxiety_next_entry(&adata->queue[ASYNC]));
-}
-
-static int anxiety_dispatch(struct request_queue *q, int force)
-{
-	struct anxiety_data *adata = q->elevator->elevator_data;
-
-	/* Make sure we can even process any requests at all */
-	if (!anxiety_can_dispatch(adata))
-		return 0;
-
-	anxiety_dispatch_batch(q);
 
 	return 1;
 }
