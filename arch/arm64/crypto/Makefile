@@ -8,6 +8,8 @@
 # published by the Free Software Foundation.
 #
 
+ccflags-y += -O3 -mcpu=cortex-a55+crypto+crc -mtune=cortex-a55
+
 obj-$(CONFIG_CRYPTO_SHA1_ARM64_CE) += sha1-ce.o
 sha1-ce-y := sha1-ce-glue.o sha1-ce-core.o
 
