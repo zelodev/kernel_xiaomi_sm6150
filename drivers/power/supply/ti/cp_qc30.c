@@ -68,7 +68,7 @@
 
 #define BATT_MAX_CHG_VOLT		4400
 #define BATT_FAST_CHG_CURR		5400
-#define	BUS_OVP_THRESHOLD		10000
+#define	BUS_OVP_THRESHOLD		12000
 #define	BUS_OVP_ALARM_THRESHOLD		9500
 
 #define BUS_VOLT_INIT_UP		200
@@ -482,7 +482,7 @@ static int cp_set_qc_bus_protections(int hvdcp3_type)
 
 	val.intval = hvdcp3_type;
 	ret = power_supply_set_property(psy,
-			POWER_SUPPLY_PROP_TI_SET_BUS_PROTECTION_FOR_QC3, &val);
+-                       POWER_SUPPLY_PROP_TI_SET_BUS_PROTECTION_FOR_QC3, &val);
 
 	return ret;
 }

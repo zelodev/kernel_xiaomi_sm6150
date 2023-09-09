@@ -1601,8 +1601,8 @@ static void smblib_uusb_removal(struct smb_charger *chg)
 	vote(chg->awake_votable, USBOV_DBC_VOTER, false, 0);
 	chg->dbc_usbov = false;
 
-	chg->voltage_min_uv = MICRO_5V;
-	chg->voltage_max_uv = MICRO_5V;
+	chg->voltage_min_uv = MICRO_9V;
+	chg->voltage_max_uv = MICRO_9V;
 	chg->usbin_forced_max_uv = 0;
 	chg->usb_icl_delta_ua = 0;
 	chg->pulse_cnt = 0;
@@ -7898,8 +7898,8 @@ static void typec_src_removal(struct smb_charger *chg)
 
 	chg->pulse_cnt = 0;
 	chg->usb_icl_delta_ua = 0;
-	chg->voltage_min_uv = MICRO_5V;
-	chg->voltage_max_uv = MICRO_5V;
+	chg->voltage_min_uv = MICRO_9V;
+	chg->voltage_max_uv = MICRO_9V;
 	chg->usbin_forced_max_uv = 0;
 	chg->chg_param.forced_main_fcc = 0;
 

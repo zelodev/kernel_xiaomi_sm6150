@@ -73,7 +73,7 @@ And public attribution of xiaomi platforms(like F3 and so and)
 		mi,qc3-bat-volt-max = <4450>;
 		mi,qc3-ffc-bat-volt-max = <4470>;
 		mi,qc3-bat-curr-max = <5400>;
-		mi,qc3-bus-volt-max = <9000>;
+		mi,qc3-bus-volt-max = <12000>;
 		mi,qc3-bus-curr-max = <3000>;
 		mi,support-qc3p5-without-smb;
 	};
@@ -84,7 +84,7 @@ And public attribution of xiaomi platforms(like F3 and so and)
 		mi,pd-bat-volt-max = <4450>;
 		mi,pd-ffc-bat-volt-max = <4470>;
 		mi,pd-bat-curr-max = <6000>;
-		mi,pd-bus-volt-max = <9000>;
+		mi,pd-bus-volt-max = <12000>;
 		mi,pd-bus-curr-max = <3000>;
 		mi,pd-bus-curr-compensate = <100>;
 	};
@@ -223,9 +223,9 @@ And public attribution of xiaomi platforms(like F3 and so and)
 		ln8000_charger,irq_index = <296>;
 		ln8000_charger,bat-ovp-threshold = <4560>;
 		ln8000_charger,bat-ovp-alarm-threshold = <4525>;
-		ln8000_charger,bus-ovp-threshold = <9500>;
-		ln8000_charger,bus-ovp-alarm-threshold = <9250>;
-		ln8000_charger,bus-ocp-threshold = <5000>;
+		ln8000_charger,bus-ovp-threshold = <13000>;
+		ln8000_charger,bus-ovp-alarm-threshold = <11000>;
+		ln8000_charger,bus-ocp-threshold = <3750>;
 		ln8000_charger,bus-ocp-alarm-threshold = <3500>;
 		ln8000_charger,ntc-alarm-cfg = <226>;
 		ln8000_charger,tdie-prot-disable;
@@ -242,7 +242,7 @@ And public attribution of xiaomi platforms(like F3 and so and)
 		reg = <0x5A>;
 		reset-gpio = <&tlmm 4 0>;
 		irq-gpio = <&pm6150l_gpios  10 0>;
-		vib_f0_pre = < 2050 >;
+		vib_f0_pre = < 2080 >;
 		vib_f0_cali_percen = < 7 >;
 		vib_cont_drv_lev = < 106 >;
 		vib_cont_drv_lvl_ov = < 155 >;
@@ -451,8 +451,8 @@ And public attribution of xiaomi platforms(like F3 and so and)
 				   2000000 2000000 1900000 1800000 1600000 1500000 1300000
 				   1300000 750000>;
 	qcom,thermal-mitigation-dcp
-				= <1800000 1800000 1800000 1800000 1800000 1800000 1800000
-				   1800000 1800000 1700000 1600000 1400000 1200000 1100000
+				= <2000000 2000000 2000000 2000000 2000000 2000000 2000000
+				   1900000 1800000 1700000 1600000 1400000 1200000 1100000
 				   1100000 1000000>;
 	qcom,thermal-mitigation-qc2
 				= <1500000 1500000 1500000 1500000 1450000 1400000 1350000
