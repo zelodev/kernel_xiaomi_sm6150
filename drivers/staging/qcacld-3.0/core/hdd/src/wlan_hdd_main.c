@@ -16473,7 +16473,7 @@ static int con_mode_handler(const char *kmessage, const struct kernel_param *kp)
  *
  * Return: Errno
  */
-static int hdd_driver_load(void)
+int hdd_driver_load(void)
 {
 	struct osif_driver_sync *driver_sync;
 	QDF_STATUS status;
@@ -16572,6 +16572,7 @@ sync_deinit:
 exit:
 	return errno;
 }
+EXPORT_SYMBOL(hdd_driver_load);
 
 /**
  * hdd_driver_unload() - Performs the driver-level unload operation
