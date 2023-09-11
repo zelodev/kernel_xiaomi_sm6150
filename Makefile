@@ -754,16 +754,47 @@ KBUILD_AFLAGS   += $(CL_FLAGS)
 KBUILD_LDFLAGS  += $(CL_FLAGS)
 endif
 
+ifdef CONFIG_LTO_CLANG
+KBUILD_CFLAG	+= -fwhole-program-vtables
+endif
+
+ifdef CONFIG_GCC_GRAPHITE
+GRAPHITE_FLAGS	+= -floop-block \
+			 -ftree-vectorize \
+			 -floop-strip-mine \
+			 -floop-interchange \
+			 -fgraphite-identity \
+			 -floop-nest-optimize \
+			 -ftree-loop-distribution
+
+OPT_FLAGS	+= $(GRAPHITE_FLAGS)
+KBUILD_LDFLAGS	+= $(GRAPHITE_FLAGS)
+endif
+
+
+
 ifdef CONFIG_LLVM_POLLY
 KBUILD_CFLAGS	+= -mllvm -polly \
-		   -mllvm -polly-run-dce \
+           -mllvm -polly-run-dce \
 		   -mllvm -polly-run-inliner \
-		   -mllvm -polly-ast-use-context \
-		   -mllvm -polly-vectorizer=stripmine \
-		   -mllvm -polly-loopfusion-greedy=1 \
 		   -mllvm -polly-reschedule=1 \
+		   -mllvm -polly-loopfusion-greedy=1 \
 		   -mllvm -polly-postopts=1 \
+		   -mllvm -polly-num-threads=0 \
+	       -mllvm -polly-omp-backend=LLVM \
+		   -mllvm -polly-scheduling=dynamic \
+		   -mllvm -polly-scheduling-chunksize=1 \
+		   -mllvm -polly-isl-arg=--no-schedule-serialize-sccs \
+		   -mllvm -polly-ast-use-context \
+		   -mllvm -polly-detect-keep-going \
+		   -mllvm -polly-position=before-vectorizer \
+		   -mllvm -polly-vectorizer=stripmine \
+		   -mllvm -polly-detect-profitability-min-per-loop-insts=40 \
 		   -mllvm -polly-invariant-load-hoisting
+		   
+KBUILD_CFLAGS += $(POLLY_FLAGS)
+KBUILD_AFLAGS += $(POLLY_FLAGS)
+KBUILD_LDFLAGS += $(POLLY_FLAGS)
 endif
 endif
 
