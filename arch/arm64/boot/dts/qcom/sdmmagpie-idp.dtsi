@@ -361,6 +361,8 @@
 	qcom,linearize-soc;
 	qcom,cl-feedback-on;
 	qcom,bass-enable;
+	qcom,qg-fast-chg-config;
+	qcom,cl-disable = <1>;
 };
 
 &pm6150_charger {
