@@ -49,6 +49,8 @@
 #include "hdd_dp_cfg.h"
 #include "wlan_hdd_object_manager.h"
 
+static char *wlan_cfg_buf;
+
 /**
  * get_next_line() - find and locate the new line pointer
  * @str: pointer to string
@@ -1352,3 +1354,16 @@ QDF_STATUS hdd_get_rx_nss(struct hdd_adapter *adapter, uint8_t *rx_nss)
 
 	return status;
 }
+
+static int __init wlan_copy_ini_buf(void)
+{
+	#include "wlan_cfg_ini.h"
+
+	size_t len = strlen(wlan_cfg) + 1;
+	wlan_cfg_buf = kmalloc(len, GFP_KERNEL);
+	memcpy(wlan_cfg_buf, wlan_cfg, len);
+
+	return 0;
+}
+
+module_init(wlan_copy_ini_buf);
