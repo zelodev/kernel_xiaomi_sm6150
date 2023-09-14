@@ -965,6 +965,10 @@ static int psy_chg_set_charging_enable(struct ln8000_info *info, int val)
 {
     int op_mode;
 
+    /* skip duplicate command of charging enable */
+    if (val == info->chg_en)
+        return 0;
+
     if (val) {
         ln_info("start charging\n");
         op_mode = LN8000_OPMODE_SWITCHING;
@@ -1609,7 +1613,7 @@ static int ln8000_probe(struct i2c_client *client, const struct i2c_device_id *i
     mutex_init(&info->irq_lock);
     i2c_set_clientdata(client, info);
 
-    ln8000_soft_reset(info);
+    //ln8000_soft_reset(info);
     ln8000_init_device(info);
 
     ret = ln8000_psy_register(info);

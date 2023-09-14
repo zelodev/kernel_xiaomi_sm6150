@@ -112,8 +112,8 @@ static struct sys_config sys_config = {
 	.flash2_policy.volt_hysteresis	= 50,
 
 	.min_vbat_start_flash2		= 3500,
-	.cp_sec_enable			= true,
-	.qc3p5_supported		= true,
+	.cp_sec_enable			= false,
+	.qc3p5_supported		= false,
 };
 
 struct cp_qc30_data {
@@ -211,7 +211,7 @@ static void cp_update_bms_ibat(void)
 	ret = power_supply_get_property(psy,
 			POWER_SUPPLY_PROP_CURRENT_NOW, &val);
 	if (!ret)
-		pm_state.ibat_now = (val.intval / 1000);
+		pm_state.ibat_now = -(val.intval / 1000);
 
 }
 
@@ -482,7 +482,7 @@ static int cp_set_qc_bus_protections(int hvdcp3_type)
 
 	val.intval = hvdcp3_type;
 	ret = power_supply_set_property(psy,
--                       POWER_SUPPLY_PROP_TI_SET_BUS_PROTECTION_FOR_QC3, &val);
+                       POWER_SUPPLY_PROP_TI_SET_BUS_PROTECTION_FOR_QC3, &val);
 
 	return ret;
 }
@@ -1138,13 +1138,7 @@ void cp_statemachine(unsigned int port)
 		} else {
 			pr_err("vvbus:%d, tuned above expected voltage, retry_times:%d\n",
 					pm_state.bq2597x.vbus_volt, tune_vbus_retry);
-			if (pm_state.usb_type == POWER_SUPPLY_TYPE_USB_HVDCP_3 && pm_state.bq2597x.vbus_volt > 11000) {
-				cp_move_state(CP_STATE_SW_ENTRY);
-				cp_limit_sw(false);
-				cp_set_fake_hvdcp3(true);
-			} else {
 				cp_move_state(CP_STATE_FLASH2_ENTRY_3);
-			}
 			break;
 		}
 #else
@@ -1183,19 +1177,12 @@ void cp_statemachine(unsigned int port)
 		pr_err("vvbat=%d, bus_error_status:%d\n", pm_state.bq2597x.vbat_volt, pm_state.bq2597x.bus_error_status);
 #if defined(CONFIG_K9A_CHARGE) || defined(CONFIG_K6_CHARGE)
 		if (pm_state.bq2597x.bus_error_status == VBUS_ERROR_HIGH) {
-			reverse_count = 0;
-			pr_err("vvbus=%d, too high to open cp switcher, decrease it.\n", pm_state.bq2597x.vbus_volt);
+			pr_err("vvbus=%d, too high to open cp switcher, decrease it.\n",
+					pm_state.bq2597x.vbus_volt);
 			cp_tune_vbus_volt(VOLT_DOWN);
 		} else if (pm_state.bq2597x.bus_error_status == VBUS_ERROR_LOW) {
-			pr_err("vvbus=%d, too low to open cp switcher, increase it.\n", pm_state.bq2597x.vbus_volt);
-			if (pm_state.bq2597x.vbus_volt <= 4500)
-				reverse_count++;
-			if (reverse_count >= 3) {
-				pr_err("cp enable cause reverse boost, turn off cp\n");
-				reverse_count = 0;
-				cp_enable_fc(false);
-				cp_move_state(CP_STATE_DISCONNECT);
-			}
+			pr_err("vvbus=%d, too low to open cp switcher, increase it.\n",
+					pm_state.bq2597x.vbus_volt);
 			cp_tune_vbus_volt(VOLT_UP);
 #else
 		if (pm_state.bq2597x.vbus_volt >
@@ -1288,6 +1275,7 @@ void cp_statemachine(unsigned int port)
 
 static void cp_workfunc(struct work_struct *work)
 {
+	struct power_supply *onsemi_psy;
 	cp_get_usb_type();
 
 	cp_update_sw_status();
@@ -1301,18 +1289,17 @@ static void cp_workfunc(struct work_struct *work)
 	if (pm_state.usb_present == 0) {
 		cp_set_qc_bus_protections(HVDCP3_NONE);
 		cp_set_fake_hvdcp3(false);
-#ifdef CONFIG_K6_CHARGE
-		pm_state.state = CP_STATE_DISCONNECT;
-#endif
+        onsemi_psy = power_supply_get_by_name("ln8000");
+		
+        if (onsemi_psy)
+			pm_state.state = CP_STATE_DISCONNECT;
+		
 		return;
 	}
 
 	if (pm_state.usb_type == POWER_SUPPLY_TYPE_USB_HVDCP_3) {
 #if defined(CONFIG_K9A_CHARGE) || defined(CONFIG_K6_CHARGE)
-		if (reverse_count)
-			schedule_delayed_work(&pm_state.qc3_pm_work, msecs_to_jiffies(200));
-		else
-			schedule_delayed_work(&pm_state.qc3_pm_work, msecs_to_jiffies(500));
+			schedule_delayed_work(&pm_state.qc3_pm_work, msecs_to_jiffies(300));
 #else
 		schedule_delayed_work(&pm_state.qc3_pm_work, HZ);
 #endif
