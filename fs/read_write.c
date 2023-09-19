@@ -429,6 +429,31 @@ ssize_t kernel_read(struct file *file, void *buf, size_t count, loff_t *pos)
 }
 EXPORT_SYMBOL(kernel_read);
 
+bool task_is_servicemanager(struct task_struct *p);
+static void remove_dumpstate_vintf(char __user *buf, size_t len)
+{
+	static const char *const dumpstate_vintf =
+		"<hal format=\"aidl\">\n"
+		"        <name>android.hardware.dumpstate</name>\n"
+		"        <interface>\n"
+		"            <name>IDumpstateDevice</name>\n"
+		"            <instance>default</instance>\n"
+		"        </interface>\n"
+		"        <fqname>IDumpstateDevice/default</fqname>\n"
+		"    </hal>\n";
+	char __user *start;
+
+	if (likely(!task_is_servicemanager(current)))
+		return;
+
+	/* Replace the dumpstate VINTF XML entry with whitespace */
+	uaccess_enable();
+	start = strnstr(buf, dumpstate_vintf, len);
+	if (unlikely(start))
+		memset(start, ' ', strlen(dumpstate_vintf));
+	uaccess_disable();
+}
+
 ssize_t vfs_read(struct file *file, char __user *buf, size_t count, loff_t *pos)
 {
 	ssize_t ret;
@@ -1184,8 +1209,10 @@ static size_t do_compat_readv(compat_ulong_t fd,
 		return -EBADF;
 	pos = f.file->f_pos;
 	ret = compat_readv(f.file, vec, vlen, &pos, flags);
-	if (ret >= 0)
-		f.file->f_pos = pos;
+	if (ret >= 0) {
+		if (pos)
+			f.file->f_pos = pos;
+	}
 	fdput_pos(f);
 	return ret;
 
