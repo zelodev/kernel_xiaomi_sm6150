@@ -113,7 +113,7 @@ static struct sys_config sys_config = {
 
 	.min_vbat_start_flash2		= 3500,
 	.cp_sec_enable			= false,
-	.qc3p5_supported		= true,
+	.qc3p5_supported		= false,
 };
 
 struct cp_qc30_data {

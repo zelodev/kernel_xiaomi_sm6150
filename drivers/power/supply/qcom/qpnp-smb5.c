@@ -1223,6 +1223,10 @@ static int smb5_usb_get_prop(struct power_supply *psy,
 		break;
 	case POWER_SUPPLY_PROP_CURRENT_MAX:
 		val->intval = get_effective_result(chg->usb_icl_votable);
+		if (smblib_get_fastcharge_mode(chg))
+			val->intval = 3000000;
+		else
+			rc = smblib_get_prop_input_current_settled(chg, val);
 		break;
 	case POWER_SUPPLY_PROP_TYPE:
 		val->intval = POWER_SUPPLY_TYPE_USB_PD;
@@ -4478,7 +4482,7 @@ static void smb5_shutdown(struct platform_device *pdev)
 				TYPEC_POWER_ROLE_CMD_MASK, EN_SNK_ONLY_BIT);
 
 	/*fix PD bug.Set 0x1360 = 0x7 when shutdown*/
-	smblib_write(chg, USBIN_ADAPTER_ALLOW_CFG_REG, USBIN_ADAPTER_ALLOW_5V_TO_12V);
+	smblib_write(chg, USBIN_ADAPTER_ALLOW_CFG_REG, USBIN_ADAPTER_ALLOW_5V_TO_9V);
 
 	/* force enable and rerun APSD */
 	smblib_apsd_enable(chg, true);
