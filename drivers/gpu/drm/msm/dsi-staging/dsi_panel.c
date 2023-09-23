@@ -4564,11 +4564,14 @@ int dsi_panel_get_lockdowninfo_for_tp(unsigned char *plockdowninfo)
 EXPORT_SYMBOL(dsi_panel_get_lockdowninfo_for_tp);
 
 #ifdef CONFIG_EXPOSURE_ADJUSTMENT
-static struct dsi_panel * set_panel;
+static struct dsi_panel *set_panel;
 static ssize_t mdss_fb_set_ea_enable(struct device *dev,
 	struct device_attribute *attr, const char *buf, size_t len)
 {
 	u32 anti_flicker;
+
+	if (!ea_panel_screen_on())
+		return len;
 
 	if (sscanf(buf, "%d", &anti_flicker) != 1) {
 		pr_err("sccanf buf error!\n");
