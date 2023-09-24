@@ -74,7 +74,7 @@ And public attribution of xiaomi platforms(like F3 and so and)
 		mi,qc3-ffc-bat-volt-max = <4470>;
 		mi,qc3-bat-curr-max = <5400>;
 		mi,qc3-bus-volt-max = <12000>;
-		mi,qc3-bus-curr-max = <3000>;
+		mi,qc3-bus-curr-max = <2100>;
 		mi,support-qc3p5-without-smb;
 	};
 
@@ -187,9 +187,9 @@ And public attribution of xiaomi platforms(like F3 and so and)
 		ti,bq2597x,bat-ucp-alarm-disable;
 		ti,bq2597x,bat-ucp-disable;
 
-		ti,bq2597x,bus-ovp-alarm-disable;
+		/*ti,bq2597x,bus-ovp-alarm-disable;
 		ti,bq2597x,bus-ocp-disable;
-		ti,bq2597x,bus-ocp-alarm-disable;
+		ti,bq2597x,bus-ocp-alarm-disable;*/
 		ti,bq2597x,bat-therm-disable;
 		ti,bq2597x,bus-therm-disable;
 		ti,bq2597x,die-therm-disable;
@@ -215,12 +215,19 @@ And public attribution of xiaomi platforms(like F3 and so and)
 		ti,bq2597x,ac-ovp-threshold = <14>;
 		//ti,bq2597x,sense-resistor-mohm = <2>;
 	};
-	
+
 	ln8000_charger@51 {
 		compatible = "lionsemi,ln8000";
-		status = "ok";
 		reg = <0x51>;
+		/* bank <bit-idx> <flags: active-low> */
+		//irq-gpios = <&tlmm 55 0x2002>;
+
+                //interrupt-parent = <&tlmm>;
+                //interrupts = <55 0x2002>;
+                //pinctrl-names = "default";
+                //pinctrl-0 = <&bq2597x_int_default &bq2597x_int_suspend>;
 		ln8000_charger,irq_index = <296>;
+		/* device configuration */
 		ln8000_charger,bat-ovp-threshold = <4560>;
 		ln8000_charger,bat-ovp-alarm-threshold = <4525>;
 		ln8000_charger,bus-ovp-threshold = <13000>;
@@ -228,6 +235,17 @@ And public attribution of xiaomi platforms(like F3 and so and)
 		ln8000_charger,bus-ocp-threshold = <3750>;
 		ln8000_charger,bus-ocp-alarm-threshold = <3500>;
 		ln8000_charger,ntc-alarm-cfg = <226>;
+		/* protection enable/disable flags
+		 *   vbat-ovp-disable
+		 *   vbat-reg-disable
+		 *   iin-ocp-disable
+		 *   iin-reg-disable
+		 *   tbus-mon-disable
+		 *   tbat-mon-disable
+		 *   tdie-prot-disable
+		 *   tdie-reg-disable
+		 *   revcurr-prot-disable
+		 */
 		ln8000_charger,tdie-prot-disable;
 		ln8000_charger,tbus-mon-disable;
 		ln8000_charger,tbat-mon-disable;
@@ -236,7 +254,7 @@ And public attribution of xiaomi platforms(like F3 and so and)
 		ln8000_charger,tdie-reg-disable;
 		ln8000_charger,vbat-reg-disable;
 	};
-	
+
 	aw8624_haptic@5A {
 		compatible = "awinic,aw8624_haptic";
 		reg = <0x5A>;
@@ -402,6 +420,7 @@ And public attribution of xiaomi platforms(like F3 and so and)
 	qcom,shutdown-delay-enable;
 	qcom,tcss-enable;
 	qcom,tcss-entry-soc = <90>;
+	qcom,bass-enable;
 
 	qcom,soc_decimal_rate = <
 		0  32
@@ -476,6 +495,12 @@ And public attribution of xiaomi platforms(like F3 and so and)
 				   1000000 700000>;
 	dpdm-supply = <&qusb_phy0>;
 	qcom,reg-dump-enable;
+    qcom,sw-jeita-enable;
+    qcom,step-charging-enable;
+    qcom,distinguish-qc-class-ab;
+	qcom,sw-jeita-enable;
+	qcom,step-charging-enable;
+	qcom,distinguish-qc-class-ab;
 	qcom,lpd-disable;
 	qcom,usbpd-phandle = <&pm6150_pdphy>;
 	qcom,disable-suspend-on-collapse;
@@ -484,7 +509,7 @@ And public attribution of xiaomi platforms(like F3 and so and)
 	mi,early-status-report;
 	mi,support-qc3p5-without-smb;
 	mi,ffc-low-tbat = <150>;
-	mi,ffc-high-tbat = <430>;
+	mi,ffc-high-tbat = <480>;
 };
 
 &pm6150_pdphy {
@@ -519,7 +544,7 @@ And public attribution of xiaomi platforms(like F3 and so and)
 };
 
 &usb0 {
-	qcom,pm-qos-latency = <67>; /* CPU6-WFI-LVL latency +1 */
+    qcom,pm-qos-latency = <67>; /* CPU6-WFI-LVL latency +1 */
 	dwc3@a600000 {
 		usb-phy = <&qusb_phy0>, <&usb_nop_phy>;
 		maximum-speed = "high-speed";

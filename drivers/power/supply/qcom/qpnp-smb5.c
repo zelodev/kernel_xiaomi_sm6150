@@ -4229,7 +4229,6 @@ static int smb5_probe(struct platform_device *pdev)
 	struct smb5 *chip;
 	struct smb_charger *chg;
 	int rc = 0;
-	union power_supply_propval val = {0, };
 
 	chip = devm_kzalloc(&pdev->dev, sizeof(*chip), GFP_KERNEL);
 	if (!chip)
@@ -4436,12 +4435,6 @@ static int smb5_probe(struct platform_device *pdev)
 
 	pr_info("QPNP SMB5 probed successfully\n");
 
-	/*if (smblib_get_prop_input_current_settled(chg, &val) <= __weak_chg_icl_ua) {
-		del_timer_sync(&chg->apsd_timer);
-		chg->apsd_ext_timeout = false;
-		smblib_rerun_apsd(chg);
-	}*/
-
 	return rc;
 
 free_irq:
@@ -4482,7 +4475,7 @@ static void smb5_shutdown(struct platform_device *pdev)
 				TYPEC_POWER_ROLE_CMD_MASK, EN_SNK_ONLY_BIT);
 
 	/*fix PD bug.Set 0x1360 = 0x7 when shutdown*/
-	smblib_write(chg, USBIN_ADAPTER_ALLOW_CFG_REG, USBIN_ADAPTER_ALLOW_5V_TO_9V);
+	smblib_write(chg, USBIN_ADAPTER_ALLOW_CFG_REG, USBIN_ADAPTER_ALLOW_5V_TO_12V);
 
 	/* force enable and rerun APSD */
 	smblib_apsd_enable(chg, true);

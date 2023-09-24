@@ -287,7 +287,8 @@ static const struct apsd_result *smblib_get_apsd_result(struct smb_charger *chg)
 
 	if (apsd_stat & QC_CHARGER_BIT) {
 		/* since its a qc_charger, either return HVDCP3 or HVDCP2 */
-		result = &smblib_apsd_results[HVDCP3]
+		if (result != &smblib_apsd_results[HVDCP3])
+			result = &smblib_apsd_results[HVDCP2];
 	}
 
 	return result;
@@ -471,14 +472,14 @@ static int smblib_set_usb_pd_allowed_voltage(struct smb_charger *chg,
 		allowed_voltage = USBIN_ADAPTER_ALLOW_9V;
 		smblib_set_opt_freq_buck(chg, chg->chg_freq.freq_9V);
 	} else if (min_allowed_uv == MICRO_12V && max_allowed_uv == MICRO_12V) {
-		allowed_voltage = USBIN_ADAPTER_ALLOW_9V;
+		allowed_voltage = USBIN_ADAPTER_ALLOW_12V;
 		smblib_set_opt_freq_buck(chg, chg->chg_freq.freq_12V);
 	} else if (min_allowed_uv < MICRO_9V && max_allowed_uv <= MICRO_9V) {
 		allowed_voltage = USBIN_ADAPTER_ALLOW_5V_TO_9V;
 	} else if (min_allowed_uv < MICRO_9V && max_allowed_uv <= MICRO_12V) {
-		allowed_voltage = USBIN_ADAPTER_ALLOW_5V_TO_9V;
+		allowed_voltage = USBIN_ADAPTER_ALLOW_5V_TO_12V;
 	} else if (min_allowed_uv < MICRO_12V && max_allowed_uv <= MICRO_12V) {
-		allowed_voltage = USBIN_ADAPTER_ALLOW_9V;
+		allowed_voltage = USBIN_ADAPTER_ALLOW_9V_TO_12V;
 	} else {
 		smblib_err(chg, "invalid allowed voltage [%d, %d]\n",
 			min_allowed_uv, max_allowed_uv);
@@ -733,13 +734,13 @@ static void smblib_uusb_removal(struct smb_charger *chg)
 
 	/* reconfigure allowed voltage for HVDCP */
 	rc = smblib_set_adapter_allowance(chg,
-			USBIN_ADAPTER_ALLOW_5V_TO_9V);
+			USBIN_ADAPTER_ALLOW_5V_OR_9V_TO_12V);
 	if (rc < 0)
-		smblib_err(chg, "Couldn't set USBIN_ADAPTER_ALLOW_5V_TO_9V rc=%d\n",
+		smblib_err(chg, "Couldn't set USBIN_ADAPTER_ALLOW_5V_OR_9V_TO_12V rc=%d\n",
 			rc);
 
-	chg->voltage_min_uv = MICRO_9V;
-	chg->voltage_max_uv = MICRO_9V;
+	chg->voltage_min_uv = MICRO_5V;
+	chg->voltage_max_uv = MICRO_5V;
 	chg->usb_icl_delta_ua = 0;
 	chg->pulse_cnt = 0;
 	chg->uusb_apsd_rerun_done = false;
@@ -2461,7 +2462,7 @@ int smblib_get_prop_usb_voltage_max(struct smb_charger *chg,
 		if (chg->chg_param.smb_version == PM660_SUBTYPE)
 			val->intval = MICRO_9V;
 		else
-			val->intval = MICRO_9V;
+			val->intval = MICRO_12V;
 		break;
 	case POWER_SUPPLY_TYPE_USB_PD:
 		val->intval = chg->voltage_max_uv;
@@ -2484,7 +2485,7 @@ int smblib_get_prop_usb_voltage_max_design(struct smb_charger *chg,
 		if (chg->chg_param.smb_version == PM660_SUBTYPE)
 			val->intval = MICRO_9V;
 		else
-			val->intval = MICRO_9V;
+			val->intval = MICRO_12V;
 		break;
 	default:
 		val->intval = MICRO_5V;
@@ -4388,8 +4389,8 @@ static void smblib_handle_typec_removal(struct smb_charger *chg)
 	chg->otg_attempts = 0;
 	chg->pulse_cnt = 0;
 	chg->usb_icl_delta_ua = 0;
-	chg->voltage_min_uv = MICRO_9V;
-	chg->voltage_max_uv = MICRO_9V;
+	chg->voltage_min_uv = MICRO_5V;
+	chg->voltage_max_uv = MICRO_5V;
 	chg->pd_active = 0;
 	chg->pd_hard_reset = 0;
 	chg->typec_legacy_valid = false;
@@ -4446,9 +4447,9 @@ static void smblib_handle_typec_removal(struct smb_charger *chg)
 
 	/* reconfigure allowed voltage for HVDCP */
 	rc = smblib_set_adapter_allowance(chg,
-			USBIN_ADAPTER_ALLOW_5V_TO_9V);
+			USBIN_ADAPTER_ALLOW_5V_OR_9V_TO_12V);
 	if (rc < 0)
-		smblib_err(chg, "Couldn't set USBIN_ADAPTER_ALLOW_5V_TO_9V rc=%d\n",
+		smblib_err(chg, "Couldn't set USBIN_ADAPTER_ALLOW_5V_OR_9V_TO_12V rc=%d\n",
 			rc);
 
 	if (chg->is_audio_adapter == true)
