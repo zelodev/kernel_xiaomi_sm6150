@@ -497,7 +497,6 @@ And public attribution of xiaomi platforms(like F3 and so and)
 	dpdm-supply = <&qusb_phy0>;
 	qcom,reg-dump-enable;
 	qcom,sw-jeita-enable;
-	qcom,step-charging-enable;
 	qcom,distinguish-qc-class-ab;
 	qcom,lpd-disable;
 	qcom,usbpd-phandle = <&pm6150_pdphy>;
