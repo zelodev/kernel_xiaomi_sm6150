@@ -74,7 +74,7 @@ static struct pdpm_config pm_config = {
 	.bus_curr_lp_lmt		= BAT_CURR_LOOP_LMT >> 1,
 	.bus_curr_compensate	= 0,
 
-	.fc2_taper_current		= 2300,
+	.fc2_taper_current		= 2000,
 	.fc2_steps			= 1,
 
 	.min_adapter_volt_required	= 10000,

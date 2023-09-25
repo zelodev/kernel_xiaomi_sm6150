@@ -92,7 +92,7 @@ enum pm_state {
 #define STEP_MV			20
 #define TAPER_VOL_HYS			80
 #define TAPER_WITH_IBUS_HYS			60
-#define TAPER_IBUS_THR			450
+#define TAPER_IBUS_THR			750
 #define BQ_TAPER_HYS_MV			10
 #define BQ_TAPER_DECREASE_STEP_MA			200
 struct sw_device {

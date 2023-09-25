@@ -578,7 +578,6 @@ static void ln8000_irq_sleep(struct ln8000_info *info, int suspend)
     }
 }
 
-#if 0
 static void ln8000_soft_reset(struct ln8000_info *info)
 {
     ln8000_write_reg(info, LN8000_REG_LION_CTRL, 0xC6);
@@ -591,7 +590,6 @@ static void ln8000_soft_reset(struct ln8000_info *info)
 
     ln8000_irq_sleep(info, 0);
 }
-#endif
 
 static void ln8000_update_opmode(struct ln8000_info *info)
 {
@@ -803,10 +801,11 @@ static int psy_chg_get_ti_alarm_status(struct ln8000_info *info)
              (info->tbus_tbat_alarm << BUS_THERM_ALARM_SHIFT) |
              (info->tdie_alarm << DIE_THERM_ALARM_SHIFT));
 
-    if (info->vbus_uV < (info->vbat_uV * 2))
+    if (info->vbus_uV < (info->vbat_uV * 2)) {
         v_offset = 0;
-    else
+	} else {
         v_offset = info->vbus_uV - (info->vbat_uV * 2);
+	}
     /* after charging-enabled, When the input current rises above rcp_th(over 400mA), it activates rcp. */
     if (info->chg_en && !(info->rcp_en)) {
         if (info->iin_uA > 400000) {
@@ -1188,7 +1187,7 @@ static void vac_ov_control_work(struct work_struct *work)
 
     adc_check_cnt = 0;
     ta_detach_cnt = 0;
-    cnt = 10000 / delay;
+    cnt = 5000 / delay;
     for (i = 0; i < cnt; ++i) {
         ln8000_get_adc_data(info, LN8000_ADC_CH_VIN, &info->vbus_uV);
         ln8000_read_reg(info, LN8000_REG_SYS_STS, &sys_st);
@@ -1399,6 +1398,40 @@ static const struct regmap_config ln8000_regmap_config = {
     .max_register	= LN8000_REG_MAX,
 };
 
+static int try_to_find_i2c_regess(struct ln8000_info *info)
+{
+	uint8_t reg_set[] = {0x51, 0x55, 0x5b, 0x5f};
+	uint8_t ori_reg = info->client->addr;
+	int i, ret = 0;
+
+	for (i = 0; i < 4; i++) {
+		info->client->addr = reg_set[i];
+		info->regmap = devm_regmap_init_i2c(info->client, &ln8000_regmap_config);
+		ret = i2c_smbus_read_byte_data(info->client, LN8000_REG_DEVICE_ID);
+		if (ret == 0x42) {
+			ln_info("find to can be access regess(0x%02x)(ori=0x%02x).\n",
+					info->client->addr, ori_reg);
+			ln8000_soft_reset(info);
+			return ret;
+		} else {
+			ln_err("can't access regess(0x%02x)(ori=0x%02x).\n",
+					info->client->addr, ori_reg);
+		}
+	}
+
+	info->client->addr = ori_reg;
+	ln_info("retry (0x%02x).\n", info->client->addr);
+	info->regmap = devm_regmap_init_i2c(info->client, &ln8000_regmap_config);
+	ret = i2c_smbus_read_byte_data(info->client, LN8000_REG_DEVICE_ID);
+	if (ret == 0x42) {
+		ln_info("retry (0x%02x) can be access regess.\n", info->client->addr);
+		ln8000_soft_reset(info);
+		return ret;
+	}
+
+	return ret;
+}
+
 static int ln8000_get_dev_role(struct i2c_client *client)
 {
     const struct of_device_id *of_id;
@@ -1525,19 +1558,26 @@ static int ln8000_probe(struct i2c_client *client, const struct i2c_device_id *i
     struct ln8000_info *info;
     int ret = 0;
 
-    /* detect device on connected i2c bus */
-    ret = i2c_smbus_read_byte_data(client, LN8000_REG_DEVICE_ID);
-    if (IS_ERR_VALUE((unsigned long)ret)) {
-        dev_err(&client->dev, "fail to detect ln8000 on i2c_bus(addr=0x%x)\n", client->addr);
-        return -ENODEV;
-    }
-    dev_info(&client->dev, "device id=0x%x\n", ret);
-
     info = devm_kzalloc(&client->dev, sizeof(struct ln8000_info), GFP_KERNEL);
     if (info == NULL) {
         dev_err(&client->dev, "%s: fail to alloc devm for ln8000_info\n", __func__);
         return -ENOMEM;
     }
+	
+	info->dev = &client->dev;
+	info->client = client;
+
+	/* detect device on connected i2c bus */
+	ret = i2c_smbus_read_byte_data(client, LN8000_REG_DEVICE_ID);
+	if (IS_ERR_VALUE((unsigned long)ret)) {
+		ret = try_to_find_i2c_regess(info);
+		if (ret != 0x42) {
+			dev_err(&client->dev, "fail to detect ln8000 on i2c_bus(addr=0x%x)\n", client->addr);
+			return -ENODEV;
+		}
+	}
+	dev_info(&client->dev, "device id=0x%x\n", ret);	
+	
     info->dev_role = ln8000_get_dev_role(client);
     if (IS_ERR_VALUE((unsigned long)info->dev_role)) {
         kfree(info);
@@ -1550,8 +1590,6 @@ static int ln8000_probe(struct i2c_client *client, const struct i2c_device_id *i
        kfree(info);
        return -ENOMEM;
     }
-    info->dev = &client->dev;
-    info->client = client;
     ret = ln8000_parse_dt(info);
     if (IS_ERR_VALUE((unsigned long)ret)) {
         ln_err("fail to parsed dt\n");
@@ -1570,6 +1608,7 @@ static int ln8000_probe(struct i2c_client *client, const struct i2c_device_id *i
     mutex_init(&info->irq_lock);
     i2c_set_clientdata(client, info);
 
+	ln8000_soft_reset(info);
     ln8000_init_device(info);
 
     ret = ln8000_psy_register(info);
