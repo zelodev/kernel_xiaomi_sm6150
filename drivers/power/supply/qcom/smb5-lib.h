@@ -159,7 +159,7 @@ enum print_reason {
 #define ICL_LIMIT_LEVEL_THR		15
 
 /* defined for qc2_unsupported */
-#define QC2_UNSUPPORTED_UA		1800000
+#define QC2_UNSUPPORTED_UA		2000000
 /* defined for HVDCP2 */
 #define HVDCP2_CURRENT_UA		1500000
 
