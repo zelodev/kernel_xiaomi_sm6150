@@ -924,6 +924,7 @@ int smblib_get_fastcharge_mode(struct smb_charger *chg)
 	}
 
 	return pval.intval;
+}
 
 static bool is_bq25970_available(struct smb_charger *chg)
 {
