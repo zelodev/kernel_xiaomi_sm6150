@@ -1088,7 +1088,7 @@ static int sugov_init(struct cpufreq_policy *policy)
 	tunables->down_rate_limit_us_screen_off =
 			cpufreq_policy_transition_delay_us(policy);
 	tunables->hispeed_load = DEFAULT_HISPEED_LOAD;
-	tunables->hispeed_freq = 0;
+	tunables->hispeed_freq = 4294967295;
 
 	if (cpumask_test_cpu(policy->cpu, cpu_perf_mask)) {
 		tunables->up_rate_limit_us =
