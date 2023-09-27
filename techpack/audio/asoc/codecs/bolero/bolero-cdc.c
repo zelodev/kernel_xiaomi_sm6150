@@ -791,7 +791,7 @@ static ssize_t mic_gain_store(struct kobject *kobj,
 	sscanf(buf, "%d", &input);
 
 	if (input < -10 || input > 20)
-		input = 0;
+		input = 5;
 
 	snd_soc_write(sound_control_codec_ptr, BOLERO_CDC_TX0_TX_VOL_CTL, input);
 
