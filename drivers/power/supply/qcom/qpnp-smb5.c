@@ -4474,7 +4474,7 @@ static void smb5_shutdown(struct platform_device *pdev)
 				TYPEC_POWER_ROLE_CMD_MASK, EN_SNK_ONLY_BIT);
 
 	/*fix PD bug.Set 0x1360 = 0x7 when shutdown*/
-	smblib_write(chg, USBIN_ADAPTER_ALLOW_CFG_REG, USBIN_ADAPTER_ALLOW_5V_TO_12V);
+	smblib_write(chg, USBIN_ADAPTER_ALLOW_CFG_REG, USBIN_ADAPTER_ALLOW_5V_TO_9V);
 
 	/* force enable and rerun APSD */
 	smblib_apsd_enable(chg, true);
