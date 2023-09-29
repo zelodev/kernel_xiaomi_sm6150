@@ -254,6 +254,7 @@ And public attribution of xiaomi platforms(like F3 and so and)
 		ln8000_charger,iin-reg-disable;
 		ln8000_charger,tdie-reg-disable;
 		ln8000_charger,vbat-reg-disable;
+		ln8000_charger,revcurr-prot-disable;
 	};
 
 	aw8624_haptic@5A {
