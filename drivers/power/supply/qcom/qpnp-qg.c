@@ -2106,6 +2106,8 @@ done:
 #ifdef CONFIG_K6_CHARGE
 #define FFC_CHG_TERM_SWD_CURRENT	-600
 #define FFC_CHG_TERM_NVT_CURRENT	-550
+#define FFC_BATT_FULL_NVT_CURRENT	925000
+#define FFC_BATT_FULL_SWD_CURRENT	880000
 #define FFC_BATT_FULL_CURRENT	920000
 #else
 #define FFC_CHG_TERM_CURRENT	-830
@@ -2155,7 +2157,17 @@ static int qg_get_ffc_iterm_for_qg(struct qpnp_qg *chip)
 			ffc_full_current = LOW_TEMP_FFC_BATT_FULL_CURRENT;
 		}
 	} else {
+#ifdef CONFIG_K6_CHARGE
+		if (is_batt_vendor_nvt){
+			ffc_full_current = FFC_BATT_FULL_NVT_CURRENT;
+			pr_err("ffc_FULL_current nvt is 925\n", rc);
+		}else{
+			ffc_full_current = FFC_BATT_FULL_SWD_CURRENT;
+			pr_err("ffc_FULL_current swd is 880\n", rc);
+		}
+#else
 		ffc_full_current = FFC_BATT_FULL_CURRENT;
+#endif
 	}
 	pr_info("ffc_full_current = %d\n", ffc_full_current);
 
@@ -2194,10 +2206,10 @@ static int qg_get_ffc_iterm_for_chg(struct qpnp_qg *chip)
 #ifdef CONFIG_K6_CHARGE
 		if (is_batt_vendor_nvt){
 			ffc_terminal_current = FFC_CHG_TERM_NVT_CURRENT;
-			pr_err("ffc_terminal_current nvt is 550\n", rc);
+			pr_err("ffc_terminal_current nvt is %d\n", rc, ffc_terminal_current);
 		}else{
 			ffc_terminal_current = FFC_CHG_TERM_SWD_CURRENT;
-			pr_err("ffc_terminal_current swd is 600\n", rc);
+			pr_err("ffc_terminal_current swd is %d\n", rc, ffc_terminal_current);
 		}
 #else
 		ffc_terminal_current = FFC_CHG_TERM_CURRENT;
