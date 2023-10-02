@@ -52,7 +52,7 @@
 	|| typec_mode == POWER_SUPPLY_TYPEC_SOURCE_HIGH)	\
 	&& (!chg->typec_legacy || chg->typec_legacy_use_rp_icl))
 
-bool skip_thermal = false;
+bool skip_thermal = true;
 module_param(skip_thermal, bool, 0644);
 
 static void update_sw_icl_max(struct smb_charger *chg, int pst);
@@ -1715,7 +1715,10 @@ int smblib_rerun_apsd_if_required(struct smb_charger *chg)
 {
 	union power_supply_propval val;
 	int rc;
-
+	
+	if (chg->support_ffc && !smblib_get_fastcharge_mode(chg))
+		smblib_set_fastcharge_mode(chg, true);
+	
 	rc = smblib_get_prop_usb_present(chg, &val);
 	if (rc < 0) {
 		smblib_err(chg, "Couldn't get usb present rc = %d\n", rc);
