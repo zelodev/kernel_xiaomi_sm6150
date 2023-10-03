@@ -27,6 +27,7 @@ void lpm_cluster_use_deepest_state(bool enable);
 #else
 static inline uint32_t register_system_pm_ops(struct system_pm_ops *pm_ops)
 { return -ENODEV; }
+static inline void update_ipi_history(int cpu) {}
 #endif
 
 #endif

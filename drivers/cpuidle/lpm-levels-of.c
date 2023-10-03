@@ -361,8 +361,11 @@ static int parse_cluster_params(struct device_node *node,
 	if (ret)
 		goto fail;
 
-	key = "qcom,disable-prediction";
-	c->lpm_prediction = !(of_property_read_bool(node, key));
+	c->ipi_prediction = !(of_property_read_bool(node,
+					"qcom,disable-ipi-prediction"));
+
+	c->lpm_prediction = !(of_property_read_bool(node,
+					"qcom,disable-prediction"));
 
 	if (c->lpm_prediction) {
 		key = "qcom,clstr-tmr-add";
