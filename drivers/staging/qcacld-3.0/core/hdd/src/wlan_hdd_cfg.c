@@ -232,9 +232,9 @@ QDF_STATUS hdd_update_mac_config(struct hdd_context *hdd_ctx)
 {
 	int status, i = 0;
 	const struct firmware *fw = NULL;
-	char *line, *buffer = NULL;
-	char *temp = NULL;
+	char *buffer = wlan_cfg_buf, *line;
 	char *name, *value;
+	char *temp = NULL;
 	int max_mac_addr = QDF_MAX_CONCURRENCY_PERSONA;
 	struct hdd_cfg_entry mac_table[QDF_MAX_CONCURRENCY_PERSONA];
 	tSirMacAddr custom_mac_addr;
@@ -336,8 +336,8 @@ QDF_STATUS hdd_update_mac_config(struct hdd_context *hdd_ctx)
 	sme_set_custom_mac_addr(custom_mac_addr);
 
 config_exit:
+	qdf_mem_free(wlan_cfg_buf);
 	qdf_mem_free(temp);
-	release_firmware(fw);
 	return qdf_status;
 }
 
