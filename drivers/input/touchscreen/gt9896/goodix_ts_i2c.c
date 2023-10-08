@@ -2019,7 +2019,7 @@ static void __exit goodix_i2c_exit(void)
 	ts_info("Goodix driver exit");
 }
 
-late_initcall(goodix_i2c_init);
+device_initcall_sync(goodix_i2c_init);
 module_exit(goodix_i2c_exit);
 
 module_param(is_goodix_ts, bool, 0644);
