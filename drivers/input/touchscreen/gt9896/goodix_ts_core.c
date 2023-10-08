@@ -3384,7 +3384,6 @@ static struct platform_driver goodix_ts_driver = {
 #ifdef CONFIG_PM
 		.pm = &dev_pm_ops,
 #endif
-		.probe_type = PROBE_PREFER_ASYNCHRONOUS,
 	},
 	.probe = goodix_ts_probe,
 	.remove = goodix_ts_remove,
