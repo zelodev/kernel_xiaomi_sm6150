@@ -1990,6 +1990,7 @@ static struct i2c_driver goodix_i2c_driver = {
 		.name = TS_DRIVER_NAME,
 		.owner = THIS_MODULE,
 		.of_match_table = of_match_ptr(i2c_matchs),
+		.probe_type = PROBE_PREFER_ASYNCHRONOUS,
 	},
 	.probe = goodix_i2c_probe,
 	.remove = goodix_i2c_remove,
