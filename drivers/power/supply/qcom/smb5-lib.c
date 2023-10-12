@@ -3124,6 +3124,8 @@ static int smblib_therm_charging(struct smb_charger *chg)
 	int thermal_fcc_ua = 0;
 	int temp_level;
 	int rc;
+	union power_supply_propval batt_temp = {0,};
+	union power_supply_propval pval;
 
 	if (chg->system_temp_level >= MAX_TEMP_LEVEL)
 		return 0;
@@ -3131,6 +3133,21 @@ static int smblib_therm_charging(struct smb_charger *chg)
 	if (skip_thermal) {
 		temp_level = chg->system_temp_level;
 		chg->system_temp_level = 0;
+	}
+	
+	if (skip_thermal) {
+		rc = smblib_get_prop_from_bms(chg,
+			POWER_SUPPLY_PROP_TEMP, &batt_temp);
+		
+		if (rc > 400) {
+			pval.intval = 1000000;
+			rc = power_supply_set_property(chg->batt_psy,
+				POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT_MAX, &pval);
+		} else if (rc <= 373) {
+			pval.intval = 5000000;
+			rc = power_supply_set_property(chg->batt_psy,
+				POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT_MAX, &pval);
+		}
 	}
 
 	switch (chg->real_charger_type) {
