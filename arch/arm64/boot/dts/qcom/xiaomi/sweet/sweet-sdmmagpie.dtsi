@@ -410,8 +410,8 @@ And public attribution of xiaomi platforms(like F3 and so and)
 	qcom,vbatt-empty-mv = <3100>;
 	qcom,vbatt-empty-cold-mv = <3000>;
 	qcom,s3-entry-fifo-length = <2>;
-	qcom,s3-entry-ibat-ua = <25000>;
-	qcom,s3-exit-ibat-ua = <45000>;
+	qcom,s3-entry-ibat-ua = <15000>;
+	qcom,s3-exit-ibat-ua = <35000>;
 	qcom,qg-iterm-ma = <350>;
 	qcom,hold-soc-while-full;
 	qcom,linearize-soc;
