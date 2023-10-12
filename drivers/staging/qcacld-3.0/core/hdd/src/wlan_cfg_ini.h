@@ -116,7 +116,7 @@ static const char wlan_cfg[] __initconst = {
 	"gEnableFastPath=1\n"
 	"gEnableIpTcpUdpChecksumOffload=1\n"
 	"TSOEnable=1\n"
-	"GROEnable=1\n"
+	"GROEnable=0\n"
 	"ght_mpdu_density=4\n"
 	"gEnableFlowSteering=1\n"
 	"ce_service_max_yield_time=500\n"
@@ -172,5 +172,7 @@ static const char wlan_cfg[] __initconst = {
 	"gEnableNUDTracking=0\n"
 	"gEnableLogp=0\n"
 	"nrx_wakelock_timeout=0\n"
+	"enable_twt=0\n"
+	"gOptimizedPowerManagement=1\n"
 	"END\n"
 };
