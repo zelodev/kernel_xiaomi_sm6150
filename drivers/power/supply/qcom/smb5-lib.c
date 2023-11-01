@@ -53,7 +53,9 @@
 	&& (!chg->typec_legacy || chg->typec_legacy_use_rp_icl))
 
 bool skip_thermal = true;
+bool throttling = false;
 module_param(skip_thermal, bool, 0644);
+module_param(throttling, bool, 0644);
 
 static void update_sw_icl_max(struct smb_charger *chg, int pst);
 static int smblib_get_prop_typec_mode(struct smb_charger *chg);
@@ -3135,18 +3137,24 @@ static int smblib_therm_charging(struct smb_charger *chg)
 		chg->system_temp_level = 0;
 	}
 	
-	if (skip_thermal) {
-		rc = smblib_get_prop_from_bms(chg,
-			POWER_SUPPLY_PROP_TEMP, &batt_temp);
-		
-		if (rc > 400) {
-			pval.intval = 1000000;
-			rc = power_supply_set_property(chg->batt_psy,
-				POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT_MAX, &pval);
-		} else if (rc <= 373) {
-			pval.intval = 5000000;
-			rc = power_supply_set_property(chg->batt_psy,
-				POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT_MAX, &pval);
+	if (skip_thermal) {		
+		if (chg->charge_status == POWER_SUPPLY_STATUS_CHARGING) {
+			rc = smblib_get_prop_from_bms(chg,
+				POWER_SUPPLY_PROP_TEMP, &batt_temp);
+				
+			if (rc > 410) {
+				if (!throttling) {
+					smblib_set_fastcharge_mode(chg, false);
+					throttling = true;
+				}
+			} else if (rc <= 370) {
+				if (throttling) {
+					throttling = false;
+					smblib_set_fastcharge_mode(chg, true);
+				}
+			}
+		} else {
+			throttling = false;
 		}
 	}
 
