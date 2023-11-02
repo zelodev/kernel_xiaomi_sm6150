@@ -529,7 +529,6 @@ $(error "Clang with Android --target detected. Did you specify CLANG_TRIPLE?")
 endif
 endif
 ifneq ($(LLVM_IAS),1)
-CLANG_FLAGS	+= -no-integrated-as
 GCC_TOOLCHAIN_DIR := $(dir $(shell which $(CROSS_COMPILE)elfedit))
 CLANG_FLAGS	+= --prefix=$(GCC_TOOLCHAIN_DIR)$(notdir $(CROSS_COMPILE))
 endif
@@ -538,7 +537,7 @@ CLANG_FLAGS	+= $(call cc-option, -Wno-misleading-indentation)
 CLANG_FLAGS	+= $(call cc-option, -Wno-bool-operation)
 CLANG_FLAGS	+= $(call cc-option, -Wno-unsequenced)
 KBUILD_CFLAGS	+= $(CLANG_FLAGS)
-KBUILD_AFLAGS	+= $(CLANG_FLAGS)
+KBUILD_AFLAGS	+= $(CLANG_FLAGS) -no-integrated-as
 export CLANG_FLAGS
 ifeq ($(ld-name),lld)
 KBUILD_CFLAGS += -fuse-ld=lld
