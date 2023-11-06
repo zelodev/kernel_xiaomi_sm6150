@@ -100,15 +100,7 @@ static ssize_t queue_ra_show(struct request_queue *q, char *page)
 static ssize_t
 queue_ra_store(struct request_queue *q, const char *page, size_t count)
 {
-	unsigned long ra_kb;
-	ssize_t ret = queue_var_store(&ra_kb, page, count);
-
-	if (ret < 0)
-		return ret;
-
-	q->backing_dev_info->ra_pages = ra_kb >> (PAGE_SHIFT - 10);
-
-	return ret;
+	return count;
 }
 
 static ssize_t queue_max_sectors_show(struct request_queue *q, char *page)
@@ -663,7 +655,7 @@ static struct queue_sysfs_entry queue_poll_delay_entry = {
 };
 
 static struct queue_sysfs_entry queue_wc_entry = {
-	.attr = {.name = "write_cache", .mode = S_IRUGO | S_IWUSR },
+	.attr = {.name = "write_cache", .mode = S_IRUGO },
 	.show = queue_wc_show,
 	.store = queue_wc_store,
 };
