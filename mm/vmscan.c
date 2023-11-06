@@ -1870,14 +1870,14 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
 	while (unlikely(too_many_isolated(pgdat, file, sc, stalled))) {
 		if (stalled)
 			return 0;
-
-		/* wait a bit for the reclaimer. */
-		msleep(100);
-		stalled = true;
 		
 		/* We are about to die and free our memory. Return now. */
 		if (fatal_signal_pending(current))
 			return SWAP_CLUSTER_MAX;
+		
+		/* wait a bit for the reclaimer. */
+		msleep(100);
+		stalled = true;
 	}
 
 	lru_add_drain();
