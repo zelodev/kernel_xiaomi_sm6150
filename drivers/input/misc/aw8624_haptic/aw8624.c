@@ -2121,7 +2121,7 @@ static irqreturn_t aw8624_irq(int irq, void *data)
 		pr_err("%s: chip over temperature int error\n", __func__);
 	}
 	if (reg_val & AW8624_BIT_SYSINT_DONEI) {
-		pr_info("%s chip playback done\n", __func__);
+		pr_debug("%s chip playback done\n", __func__);
 		/* mask donei */
 		aw8624_haptic_set_ram_donei(aw8624, false);
 	}
