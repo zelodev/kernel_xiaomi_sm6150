@@ -164,7 +164,7 @@ BFQ_BFQQ_FNS(has_waker);
 static const u64 bfq_fifo_expire[2] = { NSEC_PER_SEC / 4, NSEC_PER_SEC / 8 };
 
 /* Maximum backwards seek (magic number lifted from CFQ), in KiB. */
-static const int bfq_back_max = 16 * 1024;
+static const int bfq_back_max = 12 * 1024;
 
 /* Penalty of a backwards seek, in number of sectors. */
 static const int bfq_back_penalty = 1;
