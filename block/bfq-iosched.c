@@ -17,7 +17,7 @@
  * low-latency capabilities. BFQ also supports full hierarchical
  * scheduling through cgroups. Next paragraphs provide an introduction
  * on BFQ inner workings. Details on BFQ benefits, usage and
- * limitations can be found in Documentation/block/bfq-iosched.txt.
+ * limitations can be found in Documentation/block/bfq-iosched.rst.
  *
  * BFQ is a proportional-share storage-I/O scheduling algorithm based
  * on the slice-by-slice service scheme of CFQ. But BFQ assigns
@@ -2443,7 +2443,8 @@ static void bfq_remove_request(struct request_queue *q,
 	}
 }
 
-static bool bfq_bio_merge(struct blk_mq_hw_ctx *hctx, struct bio *bio)
+static bool bfq_bio_merge(struct blk_mq_hw_ctx *hctx, struct bio *bio,
+		unsigned int nr_segs)
 {
 	struct request_queue *q = hctx->queue;
 	struct bfq_data *bfqd = q->elevator->elevator_data;
@@ -2468,7 +2469,7 @@ static bool bfq_bio_merge(struct blk_mq_hw_ctx *hctx, struct bio *bio)
 	/* Set next flag just for testing purposes */
 	bfqd->bio_bfqq_set = true;
 
-	ret = blk_mq_sched_try_merge(q, bio, &free);
+	ret = blk_mq_sched_try_merge(q, bio, nr_segs, &free);
 
 	/*
 	 * XXX Not yet freeing without lock held, to avoid an
@@ -2577,13 +2578,12 @@ static void bfq_requests_merged(struct request_queue *q, struct request *rq,
 	struct bfq_queue *bfqq = bfq_init_rq(rq),
 		*next_bfqq = bfq_init_rq(next);
 
+	if (!bfqq)
+		return;
 	BFQ_BUG_ON(!RQ_BFQQ(rq));
 	BFQ_BUG_ON(!RQ_BFQQ(next)); /* this does not imply next is in a bfqq */
 	BFQ_BUG_ON(rq->rq_flags & RQF_DISP_LIST);
 	BFQ_BUG_ON(next->rq_flags & RQF_DISP_LIST);
-
-	if (!bfqq)
-		return;
 
 	lockdep_assert_held(&bfqq->bfqd->lock);
 
@@ -3834,10 +3834,10 @@ static bool idling_needed_for_service_guarantees(struct bfq_data *bfqd,
 						 struct bfq_queue *bfqq)
 {
 	bool asymmetric_scenario = (bfqq->wr_coeff > 1 &&
-				    (bfqd->wr_busy_queues <
-				     bfq_tot_busy_queues(bfqd) ||
-				     bfqd->rq_in_driver >=
-				     bfqq->dispatched + 4)) ||
+		(bfqd->wr_busy_queues <
+		 bfq_tot_busy_queues(bfqd) ||
+		 bfqd->rq_in_driver >=
+		 bfqq->dispatched + 4)) ||
 		bfq_asymmetric_scenario(bfqd, bfqq);
 
 	bfq_log_bfqq(bfqd, bfqq,
@@ -5293,7 +5293,7 @@ exit:
 	return rq;
 }
 
-#if defined(CONFIG_BFQ_GROUP_IOSCHED) && defined(CONFIG_DEBUG_BLK_CGROUP)
+#ifdef CONFIG_BFQ_CGROUP_DEBUG
 static void bfq_update_dispatch_stats(struct request_queue *q,
 				      struct request *rq,
 				      struct bfq_queue *in_serv_queue,
@@ -5343,7 +5343,7 @@ static inline void bfq_update_dispatch_stats(struct request_queue *q,
 					     struct request *rq,
 					     struct bfq_queue *in_serv_queue,
 					     bool idle_timer_disabled) {}
-#endif
+#endif /* CONFIG_BFQ_CGROUP_DEBUG */
 
 static struct request *bfq_dispatch_request(struct blk_mq_hw_ctx *hctx)
 {
@@ -5435,9 +5435,6 @@ void bfq_put_queue(struct bfq_queue *bfqq)
 			bfqq->bfqd->burst_size--;
 	}
 
-	if (bfqq->bfqd)
-		bfq_log_bfqq(bfqq->bfqd, bfqq, "%p freed", bfqq);
-
 	/*
 	 * bfqq does not exist any longer, so it cannot be woken by
 	 * any other queue, and cannot wake any other queue. Then bfqq
@@ -5472,6 +5469,9 @@ void bfq_put_queue(struct bfq_queue *bfqq)
 	bfq_log_bfqq(bfqq->bfqd, bfqq, "putting blkg and bfqg %p\n", bfqg);
 	bfqg_and_blkg_put(bfqg);
 #endif
+	if (bfqq->bfqd)
+		bfq_log_bfqq(bfqq->bfqd, bfqq, "%p freed", bfqq);
+
 	kmem_cache_free(bfq_pool, bfqq);
 }
 
@@ -6059,7 +6059,7 @@ static bool __bfq_insert_request(struct bfq_data *bfqd, struct request *rq)
 	return idle_timer_disabled;
 }
 
-#if defined(CONFIG_BFQ_GROUP_IOSCHED) && defined(CONFIG_DEBUG_BLK_CGROUP)
+#ifdef CONFIG_BFQ_CGROUP_DEBUG
 static void bfq_update_insert_stats(struct request_queue *q,
 				    struct bfq_queue *bfqq,
 				    bool idle_timer_disabled,
@@ -6089,7 +6089,7 @@ static inline void bfq_update_insert_stats(struct request_queue *q,
 					   struct bfq_queue *bfqq,
 					   bool idle_timer_disabled,
 					   unsigned int cmd_flags) {}
-#endif
+#endif /* CONFIG_BFQ_CGROUP_DEBUG */
 
 static void bfq_insert_request(struct blk_mq_hw_ctx *hctx, struct request *rq,
 			       bool at_head)

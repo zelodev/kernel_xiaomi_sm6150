@@ -859,6 +859,9 @@ __bfq_entity_update_weight_prio(struct bfq_service_tree *old_st,
 		}
 #endif
 
+		/* Matches the smp_wmb() in bfq_group_set_weight. */
+		smp_rmb();
+
 		BFQ_BUG_ON(entity->tree && update_class_too);
 		BFQ_BUG_ON(old_st->wsum < entity->weight);
 		old_st->wsum -= entity->weight;
