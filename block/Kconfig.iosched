@@ -96,25 +96,6 @@ config DEFAULT_IOSCHED
 	default "bfq-sq" if DEFAULT_BFQ_SQ
 	default "noop" if DEFAULT_NOOP
 
-config MQ_IOSCHED_BFQ
-	tristate "BFQ-MQ I/O Scheduler"
-	default y
-	---help---
-	BFQ I/O scheduler for BLK-MQ. BFQ-MQ distributes bandwidth
-	among all processes according to their weights, regardless of
-	the device parameters and with any workload. It also
-	guarantees a low latency to interactive and soft real-time
-	applications.  Details in Documentation/block/bfq-iosched.txt
-
-config MQ_BFQ_GROUP_IOSCHED
-	bool "BFQ-MQ hierarchical scheduling support"
-	depends on MQ_IOSCHED_BFQ && BLK_CGROUP
-	default n
-	---help---
-
-	Enable hierarchical scheduling in BFQ-MQ, using the blkio
-	(cgroups-v1) or io (cgroups-v2) controller.
-
 config MQ_IOSCHED_DEADLINE
 	tristate "MQ deadline I/O scheduler"
 	default y
@@ -132,7 +113,7 @@ config MQ_IOSCHED_KYBER
 
 config IOSCHED_BFQ
 	tristate "BFQ I/O scheduler"
-	default n
+	default y
 	---help---
 	BFQ I/O scheduler for BLK-MQ. BFQ distributes the bandwidth of
 	of the device among all processes according to their weights,
@@ -144,7 +125,7 @@ config IOSCHED_BFQ
 config BFQ_GROUP_IOSCHED
        bool "BFQ hierarchical scheduling support"
        depends on IOSCHED_BFQ && BLK_CGROUP
-       default n
+       default y
        ---help---
 
        Enable hierarchical scheduling in BFQ, using the blkio
