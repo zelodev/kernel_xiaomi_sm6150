@@ -3144,13 +3144,13 @@ static int smblib_therm_charging(struct smb_charger *chg)
 				
 			if (rc > 410) {
 				if (!throttling) {
-					smblib_set_fastcharge_mode(chg, false);
+					smblib_set_icl_current(chg, 500000);
 					throttling = true;
 				}
 			} else if (rc <= 370) {
 				if (throttling) {
 					throttling = false;
-					smblib_set_fastcharge_mode(chg, true);
+					smblib_set_icl_current(chg, 5000000);
 				}
 			}
 		} else {
