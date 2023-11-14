@@ -82,6 +82,7 @@ ifeq ($(CONFIG_COMPAT_VDSO), y)
   # CONFIG_CROSS_COMPILE_COMPAT, set CROSS_COMPILE_COMPAT to an appropriate value
   # when invoking make and fix CONFIG_CROSS_COMPILE_COMPAT.
   ifeq ($(cc-name),clang)
+	export CROSS_COMPILE_COMPAT
     export CONFIG_VDSO32 := y
     vdso32 := -DCONFIG_VDSO32=1
   else ifeq ($(CROSS_COMPILE_COMPAT),)
