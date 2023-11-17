@@ -98,7 +98,7 @@ VDSO_CFLAGS += -O3 -mcpu=cortex-a55+crypto+crc -mtune=cortex-a55
 # From arm vDSO Makefile
 VDSO_LDFLAGS += -Bsymbolic --no-undefined -soname=linux-vdso.so.1
 VDSO_LDFLAGS += -z max-page-size=4096 -z common-page-size=4096
-VDSO_LDFLAGS += -nostdlib -shared --hash-style=sysv --build-id
+VDSO_LDFLAGS += -shared --hash-style=sysv --build-id
 
 
 # Borrow vdsomunge.c from the arm vDSO
