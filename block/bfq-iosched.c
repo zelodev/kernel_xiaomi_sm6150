@@ -2804,6 +2804,15 @@ bfq_setup_merge(struct bfq_queue *bfqq, struct bfq_queue *new_bfqq)
 	 * are likely to increase the throughput.
 	 */
 	bfqq->new_bfqq = new_bfqq;
+	/*
+	 * The above assignment schedules the following redirections:
+	 * each time some I/O for bfqq arrives, the process that
+	 * generated that I/O is disassociated from bfqq and
+	 * associated with new_bfqq. Here we increases new_bfqq->ref
+	 * in advance, adding the number of processes that are
+	 * expected to be associated with new_bfqq as they happen to
+	 * issue I/O.
+	 */
 	new_bfqq->ref += process_refs;
 	return new_bfqq;
 }
@@ -2867,6 +2876,10 @@ bfq_setup_cooperator(struct bfq_data *bfqd, struct bfq_queue *bfqq,
 {
 	struct bfq_queue *in_service_bfqq, *new_bfqq;
 
+	/* if a merge has already been setup, then proceed with that first */
+	if (bfqq->new_bfqq)
+		return bfqq->new_bfqq;
+
 	/*
 	 * Do not perform queue merging if the device is non
 	 * rotational and performs internal queueing. In fact, such a
@@ -2923,9 +2936,6 @@ bfq_setup_cooperator(struct bfq_data *bfqd, struct bfq_queue *bfqq,
 			     "would have looked for coop, but too late");
 		return NULL;
 	}
-
-	if (bfqq->new_bfqq)
-		return bfqq->new_bfqq;
 
 	if (!io_struct || unlikely(bfqq == &bfqd->oom_bfqq))
 		return NULL;
@@ -7332,7 +7342,7 @@ static ssize_t bfq_wr_max_time_show(struct elevator_queue *e, char *page)
 		       jiffies_to_msecs(bfq_wr_duration(bfqd)));
 }
 
-static ssize_t bfq_weights_show(struct elevator_queue *e, char *page)
+/*static ssize_t bfq_weights_show(struct elevator_queue *e, char *page)
 {
 	struct bfq_queue *bfqq;
 	struct bfq_data *bfqd = e->elevator_data;
@@ -7373,7 +7383,7 @@ static ssize_t bfq_weights_show(struct elevator_queue *e, char *page)
 	spin_unlock_irq(&bfqd->lock);
 
 	return num_char;
-}
+}*/
 
 #define SHOW_FUNCTION(__FUNC, __VAR, __CONV)				\
 static ssize_t __FUNC(struct elevator_queue *e, char *page)		\
@@ -7479,11 +7489,11 @@ USEC_STORE_FUNCTION(bfq_slice_idle_us_store, &bfqd->bfq_slice_idle, 0,
 #undef USEC_STORE_FUNCTION
 
 /* do nothing for the moment */
-static ssize_t bfq_weights_store(struct elevator_queue *e,
+/*static ssize_t bfq_weights_store(struct elevator_queue *e,
 				    const char *page, size_t count)
 {
 	return count;
-}
+}*/
 
 static ssize_t bfq_max_budget_store(struct elevator_queue *e,
 				    const char *page, size_t count)
@@ -7598,7 +7608,7 @@ static struct elv_fs_entry bfq_attrs[] = {
 	BFQ_ATTR(wr_min_idle_time),
 	BFQ_ATTR(wr_min_inter_arr_async),
 	BFQ_ATTR(wr_max_softrt_rate),
-	BFQ_ATTR(weights),
+	/*BFQ_ATTR(weights),*/
 	__ATTR_NULL
 };
 
