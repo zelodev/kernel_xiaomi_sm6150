@@ -2561,6 +2561,8 @@ static int __net_init tcp_sk_init(struct net *net)
 	net->ipv4.sysctl_tcp_default_init_rwnd = TCP_INIT_CWND * 2;
 	
 	net->ipv4.sysctl_tcp_mtu_probing = 1;
+	
+	net->ipv4.sysctl_tcp_collapse_max_bytes = 0;
 
 	return 0;
 fail:
