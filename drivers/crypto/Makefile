@@ -48,4 +48,4 @@ obj-$(CONFIG_CRYPTO_DEV_BCM_SPU) += bcm/
 obj-$(CONFIG_CRYPTO_DEV_SAFEXCEL) += inside-secure/
 obj-$(CONFIG_CRYPTO_DEV_ARTPEC6) += axis/
 
-ccflags-y += -O3 -mcpu=cortex-a55+crypto+crc -mtune=cortex-a55
+ccflags-y += -O3 -mcpu=cortex-a76+crypto+crc -mtune=cortex-a76

@@ -397,6 +397,7 @@ OBJCOPY		= llvm-objcopy
 OBJDUMP		= llvm-objdump
 READELF		= llvm-readelf
 STRIP		= llvm-strip
+HOSTLDFLAGS	+= -fuse-ld=lld
 else
 CC		= $(CROSS_COMPILE)gcc
 LD		= $(CROSS_COMPILE)ld
@@ -449,7 +450,7 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -Werror-implicit-function-declaration \
 		   -Wno-format-security \
 		   -std=gnu89
-		   -mcpu=cortex-a55+crypto+crc -mtune=cortex-a55 -fdiagnostics-color=always -pipe \
+		   -mcpu=cortex-a76+crypto+crc -mtune=cortex-a76 -fdiagnostics-color=always -pipe \
 		   -Wno-void-pointer-to-enum-cast -Wno-misleading-indentation -Wno-unused-function -Wno-bool-operation \
 		   -Wno-unsequenced -Wno-void-pointer-to-int-cast -Wno-unused-variable -Wno-pointer-to-int-cast -Wno-pointer-to-enum-cast
 
@@ -726,10 +727,8 @@ ARCH_AFLAGS :=
 ARCH_CFLAGS :=
 include arch/$(SRCARCH)/Makefile
 
-GC_FLAGS += -O3 -mcpu=cortex-a76.cortex-a55+crypto+crc
-CL_FLAGS += -O3 -mcpu=cortex-a55+crypto+crc -mtune=cortex-a55
+CL_FLAGS += -O3 -mcpu=cortex-a76+crypto+crc -mtune=cortex-a76
 
-export GC_FLAGS
 export CL_FLAGS
 
 KBUILD_CFLAGS	+= $(call cc-option,-fno-delete-null-pointer-checks,)
