@@ -3142,9 +3142,9 @@ static int smblib_therm_charging(struct smb_charger *chg)
 			rc = smblib_get_prop_from_bms(chg,
 				POWER_SUPPLY_PROP_TEMP, &batt_temp);
 				
-			if (rc > 410) {
+			if (rc > 400) {
 				if (!throttling) {
-					smblib_set_icl_current(chg, 500000);
+					smblib_set_icl_current(chg, 1000000);
 					throttling = true;
 				}
 			} else if (rc <= 370) {
