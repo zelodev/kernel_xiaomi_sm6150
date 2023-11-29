@@ -136,7 +136,6 @@ struct inet_connection_sock {
 	} icsk_mtup;
 	u32			  icsk_user_timeout;
 
-/* XXX inflated by temporary internal debugging info */
 #define ICSK_CA_PRIV_SIZE      (216)
 	u64			  icsk_ca_priv[ICSK_CA_PRIV_SIZE / sizeof(u64)];
 };

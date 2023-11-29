@@ -210,14 +210,16 @@ struct tcp_sock {
 	} rack;
 	u16	advmss;		/* Advertised MSS			*/
 	u8	tlp_retrans:1,	/* TLP is a retransmission */
-		unused_1:7;
+		unused_1:7,
+		fast_ack_mode:2, /* which fast ack mode ? */
+		tlp_orig_data_app_limited:1, /* app-limited before TLP rtx? */
+		unused:2;
 	u32	chrono_start;	/* Start time in jiffies of a TCP chrono */
 	u32	chrono_stat[3];	/* Time in jiffies for chrono_stat stats */
 	u8	chrono_type:2,	/* current chronograph type */
 		rate_app_limited:1,  /* rate_{delivered,interval_us} limited? */
 		fastopen_connect:1, /* FASTOPEN_CONNECT sockopt */
-		is_sack_reneg:1,    /* in recovery from loss with SACK reneg? */
-		unused:3;
+		is_sack_reneg:1;    /* in recovery from loss with SACK reneg? */
 	u8	nonagle     : 4,/* Disable Nagle algorithm?             */
 		thin_lto    : 1,/* Use linear timeouts for thin streams */
 		unused1	    : 1,

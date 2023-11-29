@@ -3569,7 +3569,8 @@ static void tcp_replace_ts_recent(struct tcp_sock *tp, u32 seq)
 /* This routine deals with acks during a TLP episode and ends an episode by
  * resetting tlp_high_seq. Ref: TLP algorithm in draft-ietf-tcpm-rack
  */
-static void tcp_process_tlp_ack(struct sock *sk, u32 ack, int flag)
+static void tcp_process_tlp_ack(struct sock *sk, u32 ack, int flag,
+				struct rate_sample *rs)
 {
 	struct tcp_sock *tp = tcp_sk(sk);
 
@@ -3586,6 +3587,7 @@ static void tcp_process_tlp_ack(struct sock *sk, u32 ack, int flag)
 		/* ACK advances: there was a loss, so reduce cwnd. Reset
 		 * tlp_high_seq in tcp_init_cwnd_reduction()
 		 */
+		tcp_ca_event(sk, CA_EVENT_TLP_RECOVERY);
 		tcp_init_cwnd_reduction(sk);
 		tcp_set_ca_state(sk, TCP_CA_CWR);
 		tcp_end_cwnd_reduction(sk);
@@ -3596,6 +3598,11 @@ static void tcp_process_tlp_ack(struct sock *sk, u32 ack, int flag)
 			     FLAG_NOT_DUP | FLAG_DATA_SACKED))) {
 		/* Pure dupack: original and TLP probe arrived; no loss */
 		tp->tlp_high_seq = 0;
+	} else {
+		/* This ACK matches a TLP retransmit. We cannot yet tell if
+		 * this ACK is for the original or the TLP retransmit.
+		 */
+		rs->is_acking_tlp_retrans_seq = 1;
 	}
 }
 
@@ -3750,7 +3757,7 @@ static int tcp_ack(struct sock *sk, const struct sk_buff *skb, int flag)
 				    &sack_state);
 
 	if (tp->tlp_high_seq)
-		tcp_process_tlp_ack(sk, ack, flag);
+		tcp_process_tlp_ack(sk, ack, flag, &rs);
 
 	if (tcp_ack_is_dubious(sk, flag)) {
 		is_dupack = !(flag & (FLAG_SND_UNA_ADVANCED | FLAG_NOT_DUP));
@@ -3787,7 +3794,7 @@ no_queue:
 		tcp_ack_probe(sk);
 
 	if (tp->tlp_high_seq)
-		tcp_process_tlp_ack(sk, ack, flag);
+		tcp_process_tlp_ack(sk, ack, flag, &rs);
 	return 1;
 
 invalid_ack:
@@ -5138,7 +5145,6 @@ static int tcp_prune_queue(struct sock *sk)
 	if (net->ipv4.sysctl_tcp_collapse_max_bytes &&
 		(atomic_read(&sk->sk_rmem_alloc) > net->ipv4.sysctl_tcp_collapse_max_bytes)) {
 		/* We are dropping the packet */
-		trace_tcp_collapse_max_bytes_exceeded(sk);
 		goto do_not_collapse;
 	}
 
@@ -5258,10 +5264,11 @@ static void __tcp_ack_snd_check(struct sock *sk, int ofo_possible)
 	    /* More than one full frame received... */
 	if (((tp->rcv_nxt - tp->rcv_wup) > (inet_csk(sk)->icsk_ack.rcv_mss) *
 					sysctl_tcp_delack_seg &&
+		(tp->fast_ack_mode == 1 ||
 	     /* ... and right edge of window advances far enough.
 	      * (tcp_recvmsg() will send ACK otherwise). Or...
 	      */
-	     __tcp_select_window(sk) >= tp->rcv_wnd) ||
+	     __tcp_select_window(sk) >= tp->rcv_wnd)) ||
 	    /* We ACK each frame or... */
 	    tcp_in_quickack_mode(sk) ||
 	    /* We have out of order data or... */
