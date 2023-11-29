@@ -123,7 +123,7 @@ unsigned int normalized_sysctl_sched_min_granularity	= 200000ULL;
 /*
  * This value is kept at sysctl_sched_latency/sysctl_sched_min_granularity
  */
-static unsigned int sched_nr_latency = 20;
+static unsigned int sched_nr_latency = 15;
 
 /*
  * After fork, child runs first. If set to 0 (default) then

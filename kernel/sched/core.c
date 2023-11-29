@@ -55,6 +55,14 @@
 DEFINE_PER_CPU_SHARED_ALIGNED(struct rq, runqueues);
 
 /*
+ * Choose the yield level that will perform.
+ * 0: No yield.
+ * 1: Yield only to better priority/deadline tasks.
+ * 2: Re-queue current tasks. (default CFS)
+ */
+__read_mostly int sysctl_sched_yield_type = 0;
+
+/*
  * Number of tasks to iterate in a single balance run.
  * Limited because this is done with IRQs disabled.
  */
@@ -78,9 +86,9 @@ __read_mostly int scheduler_running;
 
 /*
  * part of the period that we allow rt tasks to run in us.
- * default: 0.95s
+ * default: 0.98s
  */
-int sysctl_sched_rt_runtime = 950000;
+int sysctl_sched_rt_runtime = 980000;
 
 /* CPUs with isolated domains */
 cpumask_var_t cpu_isolated_map;
@@ -6289,6 +6297,9 @@ SYSCALL_DEFINE0(sched_yield)
 	struct rq_flags rf;
 	struct rq *rq;
 
+	if (!sysctl_sched_yield_type)
+		return 0;
+
 	rq = this_rq_lock_irq(&rf);
 
 	schedstat_inc(rq->yld_count);
@@ -6382,6 +6393,9 @@ EXPORT_SYMBOL(__cond_resched_softirq);
  */
 void __sched yield(void)
 {
+	if (!sysctl_sched_yield_type)
+		return;
+	
 	set_current_state(TASK_RUNNING);
 	sys_sched_yield();
 }
