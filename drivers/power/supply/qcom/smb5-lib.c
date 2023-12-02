@@ -3137,7 +3137,7 @@ static int smblib_therm_charging(struct smb_charger *chg)
 		chg->system_temp_level = 0;
 	}
 	
-	if (skip_thermal) {		
+	/*if (skip_thermal) {		
 		if (chg->charge_status == POWER_SUPPLY_STATUS_CHARGING) {
 			rc = smblib_get_prop_from_bms(chg,
 				POWER_SUPPLY_PROP_TEMP, &batt_temp);
@@ -3156,7 +3156,7 @@ static int smblib_therm_charging(struct smb_charger *chg)
 		} else {
 			throttling = false;
 		}
-	}
+	}*/
 
 	switch (chg->real_charger_type) {
 	case POWER_SUPPLY_TYPE_USB_HVDCP:
